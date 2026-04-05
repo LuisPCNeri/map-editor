@@ -1,15 +1,21 @@
 package engine
 
 import (
+	"image/color"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
 )
 
+var gridColor = color.NRGBA{150, 150, 150, 60}
+
 type mapRenderer struct {
 	canvas *MapViewport
 	objs   []fyne.CanvasObject
 	pool   map[TileCoord]*canvas.Rectangle
+
+	gridLines []*canvas.Line
 }
 
 type MapViewport struct {
@@ -56,11 +62,13 @@ func (r *mapRenderer) MinSize() fyne.Size {
 }
 
 func (r *mapRenderer) Refresh() {
+	r.Layout(r.canvas.Size())
 	canvas.Refresh(r.canvas)
 }
 
 func (r *mapRenderer) Layout(size fyne.Size) {
 	r.objs = nil
+	lineIndex := 0
 
 	startX := int(-r.canvas.OffsetX / r.canvas.TileSize)
 	startY := int(-r.canvas.OffsetY / r.canvas.TileSize)
@@ -90,4 +98,67 @@ func (r *mapRenderer) Layout(size fyne.Size) {
 			}
 		}
 	}
+
+	getLine := func() *canvas.Line {
+		if lineIndex >= len(r.gridLines) {
+			newLine := canvas.NewLine(gridColor)
+			newLine.StrokeWidth = 1
+			r.gridLines = append(r.gridLines, newLine)
+		}
+
+		line := r.gridLines[lineIndex]
+		lineIndex++
+		return line
+	}
+
+	for x := startX; x <= endX; x++ {
+		line := getLine()
+		pixelX := float32(x)*r.canvas.TileSize + r.canvas.OffsetX
+
+		line.Position1 = fyne.NewPos(pixelX, 0)
+		line.Position2 = fyne.NewPos(pixelX, size.Height)
+
+		r.objs = append(r.objs, line)
+	}
+
+	for y := startY; y <= endY; y++ {
+		line := getLine()
+		pixelY := float32(y)*r.canvas.TileSize + r.canvas.OffsetY
+
+		line.Position1 = fyne.NewPos(0, pixelY)
+		line.Position2 = fyne.NewPos(size.Width, pixelY)
+
+		r.objs = append(r.objs, line)
+	}
+}
+
+func (m *MapViewport) Dragged(e *fyne.DragEvent) {
+	m.OffsetX += e.Dragged.DX
+	m.OffsetY += e.Dragged.DY
+
+	m.Refresh()
+}
+
+// / Required by interface ig
+func (m *MapViewport) DragEnd() {
+	m.Refresh()
+}
+
+func (m *MapViewport) Scrolled(e *fyne.ScrollEvent) {
+	zoomSpeed := float32(2)
+
+	if e.Scrolled.DY > 0 {
+		m.TileSize += zoomSpeed
+	} else if e.Scrolled.DY < 0 {
+		m.TileSize -= zoomSpeed
+	}
+
+	if m.TileSize < 16 {
+		m.TileSize = 16
+	}
+	if m.TileSize > 128 {
+		m.TileSize = 128
+	}
+
+	m.Refresh()
 }
