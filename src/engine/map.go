@@ -236,7 +236,6 @@ func (m *MapViewport) MouseUp(e *desktop.MouseEvent) {
 
 	if e.Button == desktop.MouseButtonPrimary {
 		HandleLMBPress(m, e)
-		return
 	}
 
 	m.Refresh()
