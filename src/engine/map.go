@@ -2,18 +2,22 @@ package engine
 
 import (
 	"image/color"
+	"math"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
 var gridColor = color.NRGBA{150, 150, 150, 60}
+var gridFocusColor = color.NRGBA{100, 100, 255, 255}
 
 type mapRenderer struct {
-	canvas *MapViewport
-	objs   []fyne.CanvasObject
-	pool   map[TileCoord]*canvas.Rectangle
+	canvas           *MapViewport
+	objs             []fyne.CanvasObject
+	pool             map[TileCoord]*canvas.Rectangle
+	selectionCursors []*canvas.Rectangle
 
 	gridLines []*canvas.Line
 }
@@ -26,6 +30,10 @@ type MapViewport struct {
 	OffsetY  float32
 	Zoom     float32
 	TileSize float32
+
+	SelectedTiles map[TileCoord]bool
+
+	isDragging bool
 }
 
 func NewMapViewport() *MapViewport {
@@ -35,6 +43,8 @@ func NewMapViewport() *MapViewport {
 		OffsetX:  0,
 		OffsetY:  0,
 		Zoom:     0,
+
+		SelectedTiles: make(map[TileCoord]bool),
 	}
 
 	v.ExtendBaseWidget(v)
@@ -84,7 +94,9 @@ func (r *mapRenderer) Layout(size fyne.Size) {
 
 				rect, in_pool := r.pool[coord]
 				if !in_pool {
-					rect = canvas.NewRectangle(tileData.Color)
+					rect = canvas.NewRectangle(color.Transparent)
+					rect.StrokeColor = tileData.Color
+					rect.StrokeWidth = 1
 					r.pool[coord] = rect
 				}
 
@@ -130,9 +142,34 @@ func (r *mapRenderer) Layout(size fyne.Size) {
 
 		r.objs = append(r.objs, line)
 	}
+
+	cursorIndex := 0
+
+	for coord := range r.canvas.SelectedTiles {
+
+		if cursorIndex >= len(r.selectionCursors) {
+			cursor := canvas.NewRectangle(color.Transparent)
+			cursor.StrokeColor = gridFocusColor
+			cursor.StrokeWidth = 1
+
+			r.selectionCursors = append(r.selectionCursors, cursor)
+		}
+
+		cursor := r.selectionCursors[cursorIndex]
+		cursorIndex++
+
+		pixelX := float32(coord.X)*r.canvas.TileSize + r.canvas.OffsetX
+		pixelY := float32(coord.Y)*r.canvas.TileSize + r.canvas.OffsetY
+
+		cursor.Move(fyne.NewPos(pixelX, pixelY))
+		cursor.Resize(fyne.NewSize(r.canvas.TileSize, r.canvas.TileSize))
+		r.objs = append(r.objs, cursor)
+	}
 }
 
 func (m *MapViewport) Dragged(e *fyne.DragEvent) {
+	m.isDragging = true
+
 	m.OffsetX += e.Dragged.DX
 	m.OffsetY += e.Dragged.DY
 
@@ -162,3 +199,50 @@ func (m *MapViewport) Scrolled(e *fyne.ScrollEvent) {
 
 	m.Refresh()
 }
+
+func (m *MapViewport) MouseDown(e *desktop.MouseEvent) {
+	fyne.CurrentApp().Driver().CanvasForObject(m).Focus(m)
+	m.isDragging = false
+}
+
+func HandleLMBPress(m *MapViewport, e *desktop.MouseEvent) {
+	gridX := int(math.Floor(float64((e.Position.X - m.OffsetX) / m.TileSize)))
+	gridY := int(math.Floor(float64((e.Position.Y - m.OffsetY) / m.TileSize)))
+	coord := TileCoord{int32(gridX), int32(gridY)}
+
+	isSelectMultiple := (e.Modifier & fyne.KeyModifierShortcutDefault) != 0
+
+	if isSelectMultiple {
+		if m.SelectedTiles[coord] {
+			delete(m.SelectedTiles, coord)
+		} else {
+			m.SelectedTiles[coord] = true
+		}
+	} else {
+		if m.SelectedTiles[coord] && len(m.SelectedTiles) == 1 {
+			m.SelectedTiles = make(map[TileCoord]bool)
+		} else {
+			m.SelectedTiles = make(map[TileCoord]bool)
+			m.SelectedTiles[coord] = true
+		}
+	}
+}
+
+func (m *MapViewport) MouseUp(e *desktop.MouseEvent) {
+	if m.isDragging {
+		m.isDragging = false
+		return
+	}
+
+	if e.Button == desktop.MouseButtonPrimary {
+		HandleLMBPress(m, e)
+		return
+	}
+
+	m.Refresh()
+}
+
+func (m *MapViewport) FocusLost()                {}
+func (m *MapViewport) FocusGained()              {}
+func (m *MapViewport) TypedRune(rune)            {}
+func (m *MapViewport) TypedKey(e *fyne.KeyEvent) {}
