@@ -80,6 +80,12 @@ func SaveProject(m *engine.MapViewport) {
 func LoadProject(projPath string, imgMenu *fyne.Container, m *engine.MapViewport) {
 	os.Chdir(projPath)
 
+	// Clear existing data to prevent interference from previous projects
+	m.MapData = make(map[engine.TileCoord]engine.Tile)
+	m.ResCache = make(map[string]fyne.Resource)
+	m.SelectedTiles = make(map[engine.TileCoord]bool)
+	imgMenu.Objects = nil
+
 	items, _ := os.ReadDir("./assets")
 	for _, item := range items {
 		if item.IsDir() {

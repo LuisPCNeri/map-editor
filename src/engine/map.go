@@ -35,7 +35,7 @@ type MapViewport struct {
 
 	SelectedTiles map[TileCoord]bool
 
-	resCache map[string]fyne.Resource
+	ResCache map[string]fyne.Resource
 
 	isDragging bool
 }
@@ -50,7 +50,7 @@ func NewMapViewport() *MapViewport {
 
 		SelectedTiles: make(map[TileCoord]bool),
 
-		resCache: make(map[string]fyne.Resource),
+		ResCache: make(map[string]fyne.Resource),
 	}
 
 	v.ExtendBaseWidget(v)
@@ -61,11 +61,11 @@ func (v *MapViewport) LoadResource(uri fyne.URI) fyne.Resource {
 	if uri == nil || uri.String() == "" {
 		return nil
 	}
-	if res, ok := v.resCache[uri.String()]; ok {
+	if res, ok := v.ResCache[uri.String()]; ok {
 		return res
 	}
 	res, _ := storage.LoadResourceFromURI(uri)
-	v.resCache[uri.String()] = res
+	v.ResCache[uri.String()] = res
 	return res
 }
 
