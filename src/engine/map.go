@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -17,6 +18,7 @@ type mapRenderer struct {
 	canvas           *MapViewport
 	objs             []fyne.CanvasObject
 	pool             map[TileCoord]*canvas.Rectangle
+	imgPool          map[TileCoord]*canvas.Image
 	selectionCursors []*canvas.Rectangle
 
 	gridLines []*canvas.Line
@@ -33,6 +35,8 @@ type MapViewport struct {
 
 	SelectedTiles map[TileCoord]bool
 
+	resCache map[string]fyne.Resource
+
 	isDragging bool
 }
 
@@ -45,17 +49,32 @@ func NewMapViewport() *MapViewport {
 		Zoom:     0,
 
 		SelectedTiles: make(map[TileCoord]bool),
+
+		resCache: make(map[string]fyne.Resource),
 	}
 
 	v.ExtendBaseWidget(v)
 	return v
 }
 
+func (v *MapViewport) LoadResource(uri fyne.URI) fyne.Resource {
+	if uri == nil || uri.String() == "" {
+		return nil
+	}
+	if res, ok := v.resCache[uri.String()]; ok {
+		return res
+	}
+	res, _ := storage.LoadResourceFromURI(uri)
+	v.resCache[uri.String()] = res
+	return res
+}
+
 func (v *MapViewport) CreateRenderer() fyne.WidgetRenderer {
 	rend := &mapRenderer{
-		canvas: v,
-		objs:   []fyne.CanvasObject{},
-		pool:   make(map[TileCoord]*canvas.Rectangle),
+		canvas:  v,
+		objs:    []fyne.CanvasObject{},
+		pool:    make(map[TileCoord]*canvas.Rectangle),
+		imgPool: make(map[TileCoord]*canvas.Image),
 	}
 
 	return rend
@@ -77,7 +96,7 @@ func (r *mapRenderer) Refresh() {
 }
 
 func (r *mapRenderer) Layout(size fyne.Size) {
-	r.objs = nil
+	r.objs = r.objs[:0]
 	lineIndex := 0
 
 	startX := int(-r.canvas.OffsetX / r.canvas.TileSize)
@@ -91,22 +110,45 @@ func (r *mapRenderer) Layout(size fyne.Size) {
 			coord := TileCoord{X: int32(x), Y: int32(y)}
 
 			if tileData, exists := r.canvas.MapData[coord]; exists {
+				if tileData.ImgURI != nil {
+					res := r.canvas.LoadResource(tileData.ImgURI)
+					if res == nil {
+						continue
+					}
 
-				rect, in_pool := r.pool[coord]
-				if !in_pool {
-					rect = canvas.NewRectangle(color.Transparent)
+					img, in_pool := r.imgPool[coord]
+					if !in_pool {
+						img = canvas.NewImageFromResource(res)
+						img.FillMode = canvas.ImageFillStretch
+						r.imgPool[coord] = img
+					} else if img.Resource != res {
+						img.Resource = res
+						img.Refresh()
+					}
+
+					pixelX := float32(x)*r.canvas.TileSize + r.canvas.OffsetX
+					pixelY := float32(y)*r.canvas.TileSize + r.canvas.OffsetY
+
+					img.Move(fyne.NewPos(pixelX, pixelY))
+					img.Resize(fyne.NewSize(r.canvas.TileSize, r.canvas.TileSize))
+					r.objs = append(r.objs, img)
+				} else {
+					rect, in_pool := r.pool[coord]
+					if !in_pool {
+						rect = canvas.NewRectangle(color.Transparent)
+						rect.StrokeWidth = 1
+						r.pool[coord] = rect
+					}
 					rect.StrokeColor = tileData.Color
-					rect.StrokeWidth = 1
-					r.pool[coord] = rect
+
+					pixelX := float32(x)*r.canvas.TileSize + r.canvas.OffsetX
+					pixelY := float32(y)*r.canvas.TileSize + r.canvas.OffsetY
+
+					rect.Move(fyne.NewPos(pixelX, pixelY))
+					rect.Resize(fyne.NewSize(r.canvas.TileSize, r.canvas.TileSize))
+
+					r.objs = append(r.objs, rect)
 				}
-
-				pixelX := float32(x)*r.canvas.TileSize + r.canvas.OffsetX
-				pixelY := float32(y)*r.canvas.TileSize + r.canvas.OffsetY
-
-				rect.Move(fyne.NewPos(pixelX, pixelY))
-				rect.Resize(fyne.NewSize(r.canvas.TileSize, r.canvas.TileSize))
-
-				r.objs = append(r.objs, rect)
 			}
 		}
 	}
