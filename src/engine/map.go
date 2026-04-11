@@ -14,11 +14,15 @@ import (
 var gridColor = color.NRGBA{150, 150, 150, 60}
 var gridFocusColor = color.NRGBA{100, 100, 255, 255}
 
+const renderPadding = 5
+
 type mapRenderer struct {
 	canvas           *MapViewport
 	objs             []fyne.CanvasObject
-	pool             map[TileCoord]*canvas.Rectangle
+	rectPool         map[TileCoord]*canvas.Rectangle
 	imgPool          map[TileCoord]*canvas.Image
+	inactiveImgPool  map[fyne.Resource][]*canvas.Image
+	inactiveRectPool []*canvas.Rectangle
 	selectionCursors []*canvas.Rectangle
 
 	gridLines []*canvas.Line
@@ -34,8 +38,7 @@ type MapViewport struct {
 	TileSize float32
 
 	SelectedTiles map[TileCoord]bool
-
-	ResCache map[string]fyne.Resource
+	ResCache      map[string]fyne.Resource
 
 	isDragging bool
 }
@@ -49,8 +52,7 @@ func NewMapViewport() *MapViewport {
 		Zoom:     0,
 
 		SelectedTiles: make(map[TileCoord]bool),
-
-		ResCache: make(map[string]fyne.Resource),
+		ResCache:      make(map[string]fyne.Resource),
 	}
 
 	v.ExtendBaseWidget(v)
@@ -71,10 +73,12 @@ func (v *MapViewport) LoadResource(uri fyne.URI) fyne.Resource {
 
 func (v *MapViewport) CreateRenderer() fyne.WidgetRenderer {
 	rend := &mapRenderer{
-		canvas:  v,
-		objs:    []fyne.CanvasObject{},
-		pool:    make(map[TileCoord]*canvas.Rectangle),
-		imgPool: make(map[TileCoord]*canvas.Image),
+		canvas:           v,
+		objs:             []fyne.CanvasObject{},
+		rectPool:         make(map[TileCoord]*canvas.Rectangle),
+		imgPool:          make(map[TileCoord]*canvas.Image),
+		inactiveImgPool:  make(map[fyne.Resource][]*canvas.Image),
+		inactiveRectPool: []*canvas.Rectangle{},
 	}
 
 	return rend
@@ -92,34 +96,59 @@ func (r *mapRenderer) MinSize() fyne.Size {
 
 func (r *mapRenderer) Refresh() {
 	r.Layout(r.canvas.Size())
-	canvas.Refresh(r.canvas)
 }
 
 func (r *mapRenderer) Layout(size fyne.Size) {
 	r.objs = r.objs[:0]
-	lineIndex := 0
 
-	startX := int(-r.canvas.OffsetX / r.canvas.TileSize)
-	startY := int(-r.canvas.OffsetY / r.canvas.TileSize)
+	visibleStartX := int(math.Floor(float64(-r.canvas.OffsetX / r.canvas.TileSize)))
+	visibleStartY := int(math.Floor(float64(-r.canvas.OffsetY / r.canvas.TileSize)))
+	visibleEndX := int(math.Ceil(float64((size.Width - r.canvas.OffsetX) / r.canvas.TileSize)))
+	visibleEndY := int(math.Ceil(float64((size.Height - r.canvas.OffsetY) / r.canvas.TileSize)))
 
-	endX := startX + int(size.Width/r.canvas.TileSize)
-	endY := startY + int(size.Height/r.canvas.TileSize)
+	startX := visibleStartX - renderPadding
+	startY := visibleStartY - renderPadding
+	endX := visibleEndX + renderPadding
+	endY := visibleEndY + renderPadding
+
+	visibleCoords := make(map[TileCoord]bool)
 
 	for x := startX; x < endX; x++ {
 		for y := startY; y < endY; y++ {
 			coord := TileCoord{X: int32(x), Y: int32(y)}
 
 			if tileData, exists := r.canvas.MapData[coord]; exists {
-				if tileData.ImgURI != nil {
-					res := r.canvas.LoadResource(tileData.ImgURI)
+				if tileData.Resource != nil || tileData.ImgURI != nil {
+					res := tileData.Resource
 					if res == nil {
-						continue
+						res = r.canvas.LoadResource(tileData.ImgURI)
+						tileData.Resource = res
+						r.canvas.MapData[coord] = tileData
 					}
 
-					img, in_pool := r.imgPool[coord]
-					if !in_pool {
-						img = canvas.NewImageFromResource(res)
-						img.FillMode = canvas.ImageFillStretch
+					img, inPool := r.imgPool[coord]
+					if !inPool {
+						/// Try to find an inactive image that ALREADY has this exact resource pointer
+						if bucket, ok := r.inactiveImgPool[res]; ok && len(bucket) > 0 {
+							img = bucket[len(bucket)-1]
+							r.inactiveImgPool[res] = bucket[:len(bucket)-1]
+						} else {
+							/// Take any inactive image from any bucket and swap the resource
+							for resPtr, fallbackBucket := range r.inactiveImgPool {
+								if len(fallbackBucket) > 0 {
+									img = fallbackBucket[len(fallbackBucket)-1]
+									r.inactiveImgPool[resPtr] = fallbackBucket[:len(fallbackBucket)-1]
+									img.Resource = res
+									img.Refresh()
+									break
+								}
+							}
+						}
+
+						if img == nil {
+							img = canvas.NewImageFromResource(res)
+							img.FillMode = canvas.ImageFillStretch
+						}
 						r.imgPool[coord] = img
 					} else if img.Resource != res {
 						img.Resource = res
@@ -131,14 +160,22 @@ func (r *mapRenderer) Layout(size fyne.Size) {
 
 					img.Move(fyne.NewPos(pixelX, pixelY))
 					img.Resize(fyne.NewSize(r.canvas.TileSize, r.canvas.TileSize))
+					img.Show()
 					r.objs = append(r.objs, img)
+					visibleCoords[coord] = true
 				} else {
-					rect, in_pool := r.pool[coord]
+					rect, in_pool := r.rectPool[coord]
 					if !in_pool {
-						rect = canvas.NewRectangle(color.Transparent)
-						rect.StrokeWidth = 1
-						r.pool[coord] = rect
+						if len(r.inactiveRectPool) > 0 {
+							rect = r.inactiveRectPool[len(r.inactiveRectPool)-1]
+							r.inactiveRectPool = r.inactiveRectPool[:len(r.inactiveRectPool)-1]
+						} else {
+							rect = canvas.NewRectangle(color.Transparent)
+							rect.StrokeWidth = 1
+						}
+						r.rectPool[coord] = rect
 					}
+
 					rect.StrokeColor = tileData.Color
 
 					pixelX := float32(x)*r.canvas.TileSize + r.canvas.OffsetX
@@ -146,13 +183,34 @@ func (r *mapRenderer) Layout(size fyne.Size) {
 
 					rect.Move(fyne.NewPos(pixelX, pixelY))
 					rect.Resize(fyne.NewSize(r.canvas.TileSize, r.canvas.TileSize))
+					rect.Show()
 
 					r.objs = append(r.objs, rect)
+					visibleCoords[coord] = true
 				}
 			}
 		}
 	}
 
+	for coord, img := range r.imgPool {
+		if !visibleCoords[coord] {
+			img.Hide()
+			if img.Resource != nil {
+				resPtr := img.Resource
+				r.inactiveImgPool[resPtr] = append(r.inactiveImgPool[resPtr], img)
+			}
+			delete(r.imgPool, coord)
+		}
+	}
+	for coord, rect := range r.rectPool {
+		if !visibleCoords[coord] {
+			rect.Hide()
+			r.inactiveRectPool = append(r.inactiveRectPool, rect)
+			delete(r.rectPool, coord)
+		}
+	}
+
+	lineIndex := 0
 	getLine := func() *canvas.Line {
 		if lineIndex >= len(r.gridLines) {
 			newLine := canvas.NewLine(gridColor)
@@ -165,24 +223,33 @@ func (r *mapRenderer) Layout(size fyne.Size) {
 		return line
 	}
 
-	for x := startX; x <= endX; x++ {
-		line := getLine()
-		pixelX := float32(x)*r.canvas.TileSize + r.canvas.OffsetX
+	/// Culling
+	if r.canvas.TileSize >= 10 {
+		for x := startX; x <= endX; x++ {
+			line := getLine()
+			pixelX := float32(x)*r.canvas.TileSize + r.canvas.OffsetX
 
-		line.Position1 = fyne.NewPos(pixelX, 0)
-		line.Position2 = fyne.NewPos(pixelX, size.Height)
+			line.Position1 = fyne.NewPos(pixelX, 0)
+			line.Position2 = fyne.NewPos(pixelX, size.Height)
+			line.Show()
 
-		r.objs = append(r.objs, line)
+			r.objs = append(r.objs, line)
+		}
+
+		for y := startY; y <= endY; y++ {
+			line := getLine()
+			pixelY := float32(y)*r.canvas.TileSize + r.canvas.OffsetY
+
+			line.Position1 = fyne.NewPos(0, pixelY)
+			line.Position2 = fyne.NewPos(size.Width, pixelY)
+			line.Show()
+
+			r.objs = append(r.objs, line)
+		}
 	}
 
-	for y := startY; y <= endY; y++ {
-		line := getLine()
-		pixelY := float32(y)*r.canvas.TileSize + r.canvas.OffsetY
-
-		line.Position1 = fyne.NewPos(0, pixelY)
-		line.Position2 = fyne.NewPos(size.Width, pixelY)
-
-		r.objs = append(r.objs, line)
+	for i := lineIndex; i < len(r.gridLines); i++ {
+		r.gridLines[i].Hide()
 	}
 
 	cursorIndex := 0
@@ -205,7 +272,12 @@ func (r *mapRenderer) Layout(size fyne.Size) {
 
 		cursor.Move(fyne.NewPos(pixelX, pixelY))
 		cursor.Resize(fyne.NewSize(r.canvas.TileSize, r.canvas.TileSize))
+		cursor.Show()
 		r.objs = append(r.objs, cursor)
+	}
+
+	for i := cursorIndex; i < len(r.selectionCursors); i++ {
+		r.selectionCursors[i].Hide()
 	}
 }
 
@@ -224,6 +296,10 @@ func (m *MapViewport) DragEnd() {
 }
 
 func (m *MapViewport) Scrolled(e *fyne.ScrollEvent) {
+	// Calculate world position under the mouse before zooming
+	worldX := (e.Position.X - m.OffsetX) / m.TileSize
+	worldY := (e.Position.Y - m.OffsetY) / m.TileSize
+
 	zoomSpeed := float32(2)
 
 	if e.Scrolled.DY > 0 {
@@ -238,6 +314,10 @@ func (m *MapViewport) Scrolled(e *fyne.ScrollEvent) {
 	if m.TileSize > 128 {
 		m.TileSize = 128
 	}
+
+	// Adjust offsets so the world position stays under the mouse cursor
+	m.OffsetX = e.Position.X - (worldX * m.TileSize)
+	m.OffsetY = e.Position.Y - (worldY * m.TileSize)
 
 	m.Refresh()
 }
@@ -287,3 +367,29 @@ func (m *MapViewport) FocusLost()                {}
 func (m *MapViewport) FocusGained()              {}
 func (m *MapViewport) TypedRune(rune)            {}
 func (m *MapViewport) TypedKey(e *fyne.KeyEvent) {}
+
+type TappableImage struct {
+	widget.Icon
+	OnTap func()
+}
+
+func NewTappableImage(res fyne.Resource, onTap func()) *TappableImage {
+	t := &TappableImage{OnTap: onTap}
+	t.ExtendBaseWidget(t)
+	t.SetResource(res)
+	return t
+}
+
+func (t *TappableImage) Tapped(_ *fyne.PointEvent) {
+	if t.OnTap != nil {
+		t.OnTap()
+	}
+}
+
+func (t *TappableImage) Cursor() desktop.Cursor {
+	return desktop.PointerCursor
+}
+
+func (t *TappableImage) MinSize() fyne.Size {
+	return fyne.NewSize(64, 64)
+}

@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -31,10 +30,11 @@ func HandleAddImg(window fyne.Window, imgMenu *fyne.Container, m *engine.MapView
 		log.Println("Selected img: ", fileURI.Path())
 
 		res := m.LoadResource(fileURI)
-		imgBtn := newTappableImage(res, func() {
+		imgBtn := engine.NewTappableImage(res, func() {
 			for coord := range m.SelectedTiles {
 				tile := m.MapData[coord]
 				tile.ImgURI = fileURI
+				tile.Resource = res
 				tile.Coords = coord
 				m.MapData[coord] = tile
 			}
@@ -65,30 +65,4 @@ func CreateImageInputRect(window fyne.Window, m *engine.MapViewport) (*fyne.Cont
 	)
 
 	return menu, imgMenu
-}
-
-type tappableImage struct {
-	widget.Icon
-	onTap func()
-}
-
-func newTappableImage(res fyne.Resource, onTap func()) *tappableImage {
-	t := &tappableImage{onTap: onTap}
-	t.ExtendBaseWidget(t)
-	t.SetResource(res)
-	return t
-}
-
-func (t *tappableImage) Tapped(_ *fyne.PointEvent) {
-	if t.onTap != nil {
-		t.onTap()
-	}
-}
-
-func (t *tappableImage) Cursor() desktop.Cursor {
-	return desktop.PointerCursor
-}
-
-func (t *tappableImage) MinSize() fyne.Size {
-	return fyne.NewSize(64, 64)
 }

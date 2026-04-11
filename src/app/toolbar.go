@@ -65,13 +65,13 @@ func HandleOpenProjClick(window fyne.Window, imgMenu *fyne.Container, m *engine.
 			return
 		}
 
-		projhandling.LoadProject(folderPath, imgMenu, m)
+		projhandling.LoadProject(window, folderPath, imgMenu, m)
 
 	}, window)
 	fileDialog.Show()
 }
-func HandleSaveProjClick(m *engine.MapViewport) {
-	projhandling.SaveProject(m)
+func HandleSaveProjClick(window fyne.Window, m *engine.MapViewport) {
+	projhandling.SaveProject(window, m)
 }
 
 func HandleFileClick(button fyne.CanvasObject, window fyne.Window, imgMenu *fyne.Container, m *engine.MapViewport) {
@@ -79,7 +79,7 @@ func HandleFileClick(button fyne.CanvasObject, window fyne.Window, imgMenu *fyne
 
 	createNewProjBtn := fyne.NewMenuItem("Create project", func() { HandleCreateProjClick(window) })
 	openExistingProjBtn := fyne.NewMenuItem("Open Project", func() { HandleOpenProjClick(window, imgMenu, m) })
-	saveProjBtn := fyne.NewMenuItem("Save Project", func() { HandleSaveProjClick(m) })
+	saveProjBtn := fyne.NewMenuItem("Save Project", func() { HandleSaveProjClick(window, m) })
 
 	menu := fyne.NewMenu("File", createNewProjBtn, openExistingProjBtn, fyne.NewMenuItemSeparator(), saveProjBtn)
 

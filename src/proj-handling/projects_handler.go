@@ -9,9 +9,8 @@ import (
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
-	"fyne.io/fyne/v2/widget"
 )
 
 func CreateEmptyProject(projName string) {
@@ -58,125 +57,133 @@ func AddImgToAssetsFolder(imgPath string) {
 	}
 }
 
-func SaveProject(m *engine.MapViewport) {
+func SaveProject(window fyne.Window, m *engine.MapViewport) {
 	/// This is assuming we already are on an open project
 	/// So the JSON file should be at .../projPath/JSON
-	f, err := os.Create("map-data.json")
-	if err != nil {
-		log.Println("Error creating map-data.json:", err)
-		return
-	}
-	defer f.Close()
 
-	encoder := json.NewEncoder(f)
-	for coord, tileData := range m.MapData {
-		tileData.Coords = coord
-		if err := encoder.Encode(tileData); err != nil {
-			log.Println("Error encoding tile:", err)
+	total := len(m.MapData)
+	prog := dialog.NewProgress("Saving Project", "Please wait while we save your map data...", window)
+	prog.Show()
+
+	go func() {
+		defer prog.Hide()
+		f, err := os.Create("map-data.json")
+		if err != nil {
+			log.Println("Error creating map-data.json:", err)
+			return
 		}
-	}
-}
+		defer f.Close()
 
-func LoadProject(projPath string, imgMenu *fyne.Container, m *engine.MapViewport) {
-	os.Chdir(projPath)
-
-	// Clear existing data to prevent interference from previous projects
-	m.MapData = make(map[engine.TileCoord]engine.Tile)
-	m.ResCache = make(map[string]fyne.Resource)
-	m.SelectedTiles = make(map[engine.TileCoord]bool)
-	imgMenu.Objects = nil
-
-	items, _ := os.ReadDir("./assets")
-	for _, item := range items {
-		if item.IsDir() {
-			subItems, _ := os.ReadDir(filepath.Join("assets", item.Name()))
-			for _, subItem := range subItems {
-				if !subItem.IsDir() {
-					fullPath := filepath.Join(projPath, "assets", item.Name(), subItem.Name())
-					u := storage.NewFileURI(fullPath)
-					res := m.LoadResource(u)
-
-					imgBtn := newTappableImage(res, func() {
-						for coord := range m.SelectedTiles {
-							tile := m.MapData[coord]
-							tile.ImgURI = u
-							tile.Coords = coord
-							m.MapData[coord] = tile
-						}
-						m.Refresh()
-					})
-					imgMenu.Add(imgBtn)
-				}
+		encoder := json.NewEncoder(f)
+		count := 0
+		for coord, tileData := range m.MapData {
+			tileData.Coords = coord
+			if err := encoder.Encode(tileData); err != nil {
+				log.Println("Error encoding tile:", err)
 			}
-		} else {
-			fullPath := filepath.Join(projPath, "assets", item.Name())
-			u := storage.NewFileURI(fullPath)
-			res := m.LoadResource(u)
+			count++
+			prog.SetValue(float64(count) / float64(total))
+		}
+	}()
+}
 
-			imgBtn := newTappableImage(res, func() {
-				for coord := range m.SelectedTiles {
-					tile := m.MapData[coord]
-					tile.ImgURI = u
-					tile.Coords = coord
-					m.MapData[coord] = tile
+func LoadProject(window fyne.Window, projPath string, imgMenu *fyne.Container, m *engine.MapViewport) {
+	prog := dialog.NewProgress("Loading Project", "Preparing assets and map data...", window)
+	prog.Show()
+
+	go func() {
+		defer prog.Hide()
+		os.Chdir(projPath)
+
+		// Clear existing data to prevent interference from previous projects
+		m.MapData = make(map[engine.TileCoord]engine.Tile)
+		m.ResCache = make(map[string]fyne.Resource)
+		m.SelectedTiles = make(map[engine.TileCoord]bool)
+		imgMenu.Objects = nil
+
+		items, _ := os.ReadDir("./assets")
+		totalItems := len(items)
+		for i, item := range items {
+			prog.SetValue(float64(i) / float64(totalItems+1) * 0.5)
+			if item.IsDir() {
+				subItems, _ := os.ReadDir(filepath.Join("assets", item.Name()))
+				for _, subItem := range subItems {
+					if !subItem.IsDir() {
+						fullPath := filepath.Join(projPath, "assets", item.Name(), subItem.Name())
+						u := storage.NewFileURI(fullPath)
+						res := m.LoadResource(u)
+
+						imgBtn := engine.NewTappableImage(res, func() {
+							for coord := range m.SelectedTiles {
+								tile := m.MapData[coord]
+								tile.ImgURI = u
+								tile.Coords = coord
+								m.MapData[coord] = tile
+							}
+							m.Refresh()
+						})
+						imgMenu.Add(imgBtn)
+					}
 				}
-				m.Refresh()
-			})
-			imgMenu.Add(imgBtn)
-		}
-	}
+			} else {
+				fullPath := filepath.Join(projPath, "assets", item.Name())
+				u := storage.NewFileURI(fullPath)
+				res := m.LoadResource(u)
 
-	imgMenu.Refresh()
-
-	jsonFile := "./map-data.json"
-	f, err := os.Open(jsonFile)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			log.Println("Error opening map-data.json:", err)
+				imgBtn := engine.NewTappableImage(res, func() {
+					for coord := range m.SelectedTiles {
+						tile := m.MapData[coord]
+						tile.ImgURI = u
+						tile.Coords = coord
+						m.MapData[coord] = tile
+					}
+					m.Refresh()
+				})
+				imgMenu.Add(imgBtn)
+			}
 		}
-		return
-	}
-	defer f.Close()
 
-	decoder := json.NewDecoder(f)
-	for {
-		var tile engine.Tile
-		if err := decoder.Decode(&tile); err == io.EOF {
-			break
-		} else if err != nil {
-			log.Println("Error decoding tile:", err)
-			break
-		}
-		m.MapData[tile.Coords] = tile
-		if tile.ImgURI != nil {
-			m.LoadResource(tile.ImgURI)
+		imgMenu.Refresh()
+
+		jsonFile := "./map-data.json"
+		f, err := os.Open(jsonFile)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				log.Println("Error opening map-data.json:", err)
+			}
 			m.Refresh()
+			return
 		}
-	}
-}
+		defer f.Close()
 
-type tappableImage struct {
-	widget.Icon
-	onTap func()
-}
+		// Get file size for progress estimation
+		fi, _ := f.Stat()
+		fileSize := fi.Size()
 
-func newTappableImage(res fyne.Resource, onTap func()) *tappableImage {
-	t := &tappableImage{onTap: onTap}
-	t.ExtendBaseWidget(t)
-	t.SetResource(res)
-	return t
-}
+		decoder := json.NewDecoder(f)
+		for {
+			var tile engine.Tile
+			if err := decoder.Decode(&tile); err == io.EOF {
+				break
+			} else if err != nil {
+				log.Println("Error decoding tile:", err)
+				break
+			}
+			m.MapData[tile.Coords] = tile
 
-func (t *tappableImage) Tapped(_ *fyne.PointEvent) {
-	if t.onTap != nil {
-		t.onTap()
-	}
-}
+			if fileSize > 0 {
+				prog.SetValue(0.5 + (float64(decoder.InputOffset())/float64(fileSize))*0.5)
+			}
+		}
 
-func (t *tappableImage) Cursor() desktop.Cursor {
-	return desktop.PointerCursor
-}
+		// Pre-warm resources for all loaded tiles in one pass
+		for coord, tile := range m.MapData {
+			if tile.ImgURI != nil {
+				tile.Resource = m.LoadResource(tile.ImgURI)
+				m.MapData[coord] = tile
+			}
+		}
 
-func (t *tappableImage) MinSize() fyne.Size {
-	return fyne.NewSize(64, 64)
+		m.Refresh()
+	}()
 }

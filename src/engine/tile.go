@@ -20,6 +20,7 @@ type Tile struct {
 	IsSolid             bool
 	SpawnableMonsterIDs []int16
 	ImgURI              fyne.URI
+	Resource            fyne.Resource `json:"-"`
 
 	Color  color.Color
 	Coords TileCoord
