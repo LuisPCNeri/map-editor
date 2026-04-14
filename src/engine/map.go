@@ -16,6 +16,8 @@ var gridFocusColor = color.NRGBA{100, 100, 255, 255}
 
 const renderPadding = 5
 
+/// IMPORTANT Zooming in and out has SHIT performance
+
 type mapRenderer struct {
 	canvas           *MapViewport
 	objs             []fyne.CanvasObject
