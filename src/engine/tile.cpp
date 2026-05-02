@@ -29,7 +29,7 @@ namespace Map {
         this->border_color = {69, 69, 69, 100};
     }
     Tile::~Tile(){
-        if(this->texture) SDL_DestroyTexture(this->texture);
+        
     }
 
     void Tile::TileDraw(SDL_Rect dest){

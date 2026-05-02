@@ -55,6 +55,7 @@ namespace Map {
         this->tile_size = BASE_TILE_SIZE;
 
         this->is_mouse_down = false;
+        this->ctrl_down = false;
     }
 
     void MapViewport::ZoomIn() {
@@ -74,7 +75,7 @@ namespace Map {
         TileCoord coord((mouse_x / m->tile_size) + m->offsetX, (mouse_y / m->tile_size) + m->offsetY);
 
         bool are_tiles_selected = !m->selected_tiles.empty();
-        if(are_tiles_selected){
+        if(are_tiles_selected && !m->ctrl_down){
 
             std::map<TileCoord, Tile*>::iterator it;
             for(it = m->selected_tiles.begin(); it != m->selected_tiles.end(); it++){

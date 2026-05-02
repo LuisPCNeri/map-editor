@@ -58,6 +58,7 @@ namespace Map {
 
             float zoom;
             bool is_mouse_down;
+            bool ctrl_down;
             uint8_t tile_size;
         MapViewport();
         void ZoomIn ();
