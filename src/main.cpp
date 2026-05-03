@@ -6,20 +6,33 @@
 #include "engine/map.hpp"
 #include "engine/menu.hpp"
 #include "toolbar/toolbar.hpp"
+#include "globalStateHandler.hpp"
+#include "toolbar/buttons/toolbarBtn.hpp"
 
 #define FONT_DIRECTORY "fonts/arial.ttf"
 
 SDL_Renderer* rend = NULL;
 TTF_Font* appFont = NULL;
 bool is_running = true;
+globalStateHandler* stateHandler = NULL;
 
 static void SetUpToolbar(Toolbar::Toolbar* toolbar){
+    std::string createprojStr = "Create Project";
+    Toolbar::ToolbarBtn createProjBtn(0, 0, 5.0f, 8.0f, createprojStr);
+    createProjBtn.OnClick = [](){ 
+        stateHandler->createProjMenu = CreateProjHandleClick(); 
+        if(stateHandler->createProjMenu) stateHandler->createProjMenu->Show();
+    };
+
     std::string saveStr = "Save";
     Toolbar::ToolbarBtn saveBtn(saveStr);
+    saveBtn.OnClick = SaveBtnHandleClick;
 
     std::string openStr = "Open";
     Toolbar::ToolbarBtn openBtn(openStr);
+    openBtn.OnClick = OpenBtnHandleClick;
 
+    toolbar->ToolbarAddBtn(std::move(createProjBtn));
     toolbar->ToolbarAddBtn(std::move(saveBtn));
     toolbar->ToolbarAddBtn(std::move(openBtn));
     return;
@@ -36,6 +49,10 @@ int main(){
     }
 
     appFont = TTF_OpenFont(FONT_DIRECTORY, 16);
+    if (!appFont) {
+        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     SDL_Rect usable_bounds;
     if(SDL_GetDisplayBounds(0, &usable_bounds) != 0){
@@ -59,6 +76,10 @@ int main(){
 
     int32_t screenW, screenH;
     SDL_GetRendererOutputSize(rend, &screenW, &screenH);
+
+    stateHandler = new globalStateHandler();
+    stateHandler->createProjMenu = nullptr;
+    stateHandler->isCreateProjMenuOpen = false;
 
     Map::MapRenderer map_rend;
     Map::MapViewport viewport;
@@ -90,11 +111,34 @@ int main(){
                     break;
                 case SDL_MOUSEBUTTONUP:
                     viewport.is_mouse_down = false;
-                    if(event.motion.y < toolbar.y + toolbar.height || event.motion.y > screenH - img_menu.height )
-                        break;
                     {
                         bool mouse_moved_x = event.motion.x - last_mpos_x != 0;
                         bool mouse_moved_y = event.motion.y - last_mpos_y != 0;
+
+                        if(event.motion.y < toolbar.y + toolbar.height) {
+                            for(auto& btn : toolbar.btns) {
+                                if(!btn.isHovered) continue;
+                                btn.OnClick();
+                                break;
+                            }
+                            
+                            /// Break out of switch statement
+                            break;
+                        }
+
+                        if(stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu) {
+                            for(auto& btn : stateHandler->createProjMenu->btns) {
+                                if(!btn.isHovered) continue;
+                                btn.onPress();
+                                break;
+                            }
+
+                            /// Break out of switch statement
+                            break;
+                        }
+
+                        if(event.motion.y > screenH - img_menu.height )
+                            break;
 
                         if(!mouse_moved_x && !mouse_moved_y){
                             map_rend.SelectTile(last_mpos_x, last_mpos_y, &viewport);
@@ -107,6 +151,15 @@ int main(){
                                          event.motion.x < btn.rect.x + btn.rect.w &&
                                          event.motion.y > btn.rect.y && 
                                          event.motion.y < btn.rect.y + btn.rect.h);
+                    }
+                    
+                    if(stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu) {
+                        for(auto& btn : stateHandler->createProjMenu->btns) {
+                            btn.isHovered = (event.motion.x > btn.rect.x && 
+                                            event.motion.x < btn.rect.x + btn.rect.w &&
+                                            event.motion.y > btn.rect.y && 
+                                            event.motion.y < btn.rect.y + btn.rect.h);
+                        }
                     }
 
                     if(viewport.is_mouse_down){
@@ -138,7 +191,17 @@ int main(){
         map_rend.RenderVisible(&viewport);
         img_menu.Render();
         toolbar.Render();
+
+        if(stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu) {
+            stateHandler->createProjMenu->Render();
+        }
+
         SDL_RenderPresent(rend);
+    }
+
+    if (stateHandler) {
+        delete stateHandler->createProjMenu;
+        delete stateHandler;
     }
 
     TTF_CloseFont(appFont);

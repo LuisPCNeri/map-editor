@@ -27,6 +27,7 @@ namespace Map {
 
         public:
             std::vector<int16_t> spawnable_ids;
+            std::string path;
 
             TileCoord coord;
 
@@ -40,7 +41,7 @@ namespace Map {
         Tile();
         Tile(TileCoord coords, int32_t tile_size);
         ~Tile();
-        void SetTileSprite(SDL_Texture* tex);
+        void SetTileSprite(std::string pathToAsset);
         void ResizeTile(uint8_t tile_size);
         void SetTileBorderColor(SDL_Color color);
         void TileDraw(SDL_Rect dest);

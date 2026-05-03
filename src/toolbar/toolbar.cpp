@@ -39,7 +39,6 @@ namespace Toolbar {
         if(!this->btns.empty()) {
             std::array<int32_t, 2> lastBtnCoords = this->GetLastBtnCoords();
             btn.x = lastBtnCoords[0] + (int32_t)this->btns.back().width;
-            btn.y += lastBtnCoords[1];
         }
 
         btn.rect.x = btn.x;

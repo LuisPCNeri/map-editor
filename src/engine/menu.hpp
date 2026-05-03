@@ -3,7 +3,10 @@
 
 #include <SDL2/SDL.h>
 #include <stdint.h>
+
+#include <string>
 #include <map>
+#include <functional>
 
 #include "../utils/vp_size_t.hpp"
 
@@ -12,6 +15,9 @@
 extern SDL_Renderer* rend;
 
 namespace Menu {
+
+    static const SDL_Color TEXT_COLOR = {255, 255, 255, 255};
+    static const SDL_Color BG_COLOR   = {120, 120, 120, 255};
 
     class ImageCoord {
         public:
@@ -39,6 +45,36 @@ namespace Menu {
         ImageMenu(uint16_t img_size = BASE_IMAGE_SIZE);
         void Render();
         int8_t ImportImage();
+    };
+
+    class MenuBtn {
+            
+        private:
+            int32_t x;
+            int32_t y;
+            vw_size_t w;
+            vh_size_t h;
+            std::function<void()> onClick;
+
+        public:
+            SDL_Texture* textTexture;
+            SDL_Rect rect;
+            bool isHovered;
+        MenuBtn(int32_t x, int32_t y, float wPercent, float hPercent, std::string text, std::function<void()> onClickHandler);
+        ~MenuBtn();
+        void onPress();
+
+        // Delete copy operations to prevent dangling pointers
+        MenuBtn(const MenuBtn&) = delete;
+        MenuBtn& operator=(const MenuBtn&) = delete;
+
+        MenuBtn(MenuBtn&& other) noexcept;
+        MenuBtn& operator=(MenuBtn&& other) noexcept;
+        std::array<int32_t, 2> GetBtnCoords();
+        vw_size_t GetBtnWidth();
+        vh_size_t GetBtnHeight();
+        void SetXPos(int32_t x);
+        void SetYPos(int32_t y);
     };
 
 }

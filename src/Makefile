@@ -1,29 +1,29 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -Iengine $(shell sdl2-config --cflags)
-LDFLAGS = $(shell sdl2-config --libs) -lSDL2_ttf
-BUILD_DIR = build
+CXXFLAGS = -Wall -Wextra -std=c++17 -I. -Iengine -I/usr/include/SDL2 -D_REENTRANT
+LDFLAGS = -lSDL2 -lSDL2_ttf
 
 SRC = main.cpp \
       engine/map.cpp \
       engine/tile.cpp \
       engine/image-menu.cpp \
-      toolbar/toolbar.cpp
+      engine/menu.cpp \
+      toolbar/toolbar.cpp \
+      toolbar/buttons/toobarlBtn.cpp \
+      createProjMenu/createProjMenu.cpp
 
-OBJ = $(SRC:%.cpp=$(BUILD_DIR)/%.o)
+OBJ = $(SRC:%.cpp=build/%.o)
 TARGET = map-editor
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $(OBJ) $(LDFLAGS)
 
-$(BUILD_DIR)/%.o: %.cpp
-	@mkdir -p $(@D)
+build/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+	rm -rf build $(TARGET)
 
 rebuild: clean all
-
-.PHONY: all clean rebuild
