@@ -33,6 +33,12 @@ namespace Map {
     }
 
     void Tile::TileDraw(SDL_Rect dest){
+
+        if(this->texture) {
+            SDL_RenderCopy(rend, this->texture, NULL, &dest);
+            return;
+        }
+
         SDL_SetRenderDrawColor(rend, this->border_color.r, this->border_color.g, this->border_color.b, this->border_color.a);
         SDL_RenderDrawRect(rend, &dest);
         SDL_SetRenderDrawColor(rend, 0, 0, 0, 0);
