@@ -182,6 +182,15 @@ int main(){
                     if(event.key.keysym.scancode == SDL_SCANCODE_LCTRL)
                         viewport.ctrl_down = false;
                     break;
+
+                case SDL_DROPFILE: {
+                    char* droppedFileDir = event.drop.file;
+                    std::string filepath(droppedFileDir);
+
+                    img_menu.ImportImage(filepath, rend);
+                    SDL_free(droppedFileDir);
+                    break;
+                }
             }
         }
 

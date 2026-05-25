@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <functional>
+#include <set>
 
 #include "../utils/vp_size_t.hpp"
 
@@ -23,6 +24,13 @@ namespace Menu {
         public:
             int32_t x;
             int32_t y;
+
+        bool operator<(const ImageCoord& other) const {
+            if (x != other.x) {
+                return x < other.x;
+            }
+            return y < other.y;
+        }
     };
 
     class UsableImage {
@@ -38,13 +46,17 @@ namespace Menu {
 
         public:
             std::map<ImageCoord, UsableImage> images;
+            std::vector<SDL_Surface*> raw_surfaces;
+            std::set<std::string> importedImages;
+
             vh_size_t height;
             vw_size_t width;
             uint16_t image_size;
             SDL_Rect rect;
         ImageMenu(uint16_t img_size = BASE_IMAGE_SIZE);
         void Render();
-        int8_t ImportImage();
+        int8_t ImportImage(const std::string& filepath, SDL_Renderer* rend);
+        void PackAndSaveSpriteSheet();
     };
 
     class MenuBtn {
