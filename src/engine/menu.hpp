@@ -10,6 +10,7 @@
 #include <set>
 
 #include "../utils/vp_size_t.hpp"
+#include "map.hpp"
 
 #define BASE_IMAGE_SIZE 64
 
@@ -36,10 +37,13 @@ namespace Menu {
     class UsableImage {
         public:
             ImageCoord coord;
+            std::string fpath = "";
+
             SDL_Texture* texture;
             SDL_Rect rect;
+            bool isHovered = 0;
         int8_t SetImage(SDL_Texture* texture);
-        void SelectImage();
+        void SelectImage(Map::MapViewport viewport);
     };
     
     class ImageMenu{

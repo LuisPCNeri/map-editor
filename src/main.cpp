@@ -9,12 +9,16 @@
 #include "globalStateHandler.hpp"
 #include "toolbar/buttons/toolbarBtn.hpp"
 
+#include "engine/assetManager/assetManager.hpp"
+
 #define FONT_DIRECTORY "fonts/arial.ttf"
 
 SDL_Renderer* rend = NULL;
 TTF_Font* appFont = NULL;
 bool is_running = true;
 globalStateHandler* stateHandler = NULL;
+
+Managers::AssetManager glblAssetManager;
 
 static void SetUpToolbar(Toolbar::Toolbar* toolbar){
     std::string createprojStr = "Create Project";
@@ -137,8 +141,16 @@ int main(){
                             break;
                         }
 
-                        if(event.motion.y > screenH - img_menu.height )
+                        if(event.motion.y > screenH - img_menu.height ){
+                            for(auto& img : img_menu.images) {
+                                if(!img.second.isHovered) continue;
+
+                                img.second.SelectImage(viewport);
+                                break;
+                            }
+
                             break;
+                        }
 
                         if(!mouse_moved_x && !mouse_moved_y){
                             map_rend.SelectTile(last_mpos_x, last_mpos_y, &viewport);
@@ -152,13 +164,20 @@ int main(){
                                          event.motion.y > btn.rect.y && 
                                          event.motion.y < btn.rect.y + btn.rect.h);
                     }
+
+                    for(auto& img : img_menu.images) {
+                        img.second.isHovered = (event.motion.x > img.second.rect.x && 
+                                                event.motion.x < img.second.rect.x + img.second.rect.w &&
+                                                event.motion.y > img.second.rect.y && 
+                                                event.motion.y < img.second.rect.y + img.second.rect.h);
+                    }
                     
                     if(stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu) {
                         for(auto& btn : stateHandler->createProjMenu->btns) {
                             btn.isHovered = (event.motion.x > btn.rect.x && 
-                                            event.motion.x < btn.rect.x + btn.rect.w &&
-                                            event.motion.y > btn.rect.y && 
-                                            event.motion.y < btn.rect.y + btn.rect.h);
+                                             event.motion.x < btn.rect.x + btn.rect.w &&
+                                             event.motion.y > btn.rect.y && 
+                                             event.motion.y < btn.rect.y + btn.rect.h);
                         }
                     }
 

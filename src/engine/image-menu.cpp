@@ -1,6 +1,10 @@
 #include "menu.hpp"
 #include <cmath>
 #include <iostream>
+
+#include "engine/assetManager/assetManager.hpp"
+
+extern Managers::AssetManager glblAssetManager;
 namespace Menu {
 
     int8_t UsableImage::SetImage(SDL_Texture* tex) {
@@ -8,8 +12,15 @@ namespace Menu {
         return 0;
     }
 
-    void UsableImage::SelectImage() {
+    void UsableImage::SelectImage(Map::MapViewport vp) {
         // Logic for selecting this specific image
+
+        SDL_Texture* texture = glblAssetManager.GetAsset(this->fpath);
+        if(!texture) return;
+        
+        for(auto tile : vp.selected_tiles) {
+            tile.second->texture = texture;
+        }
     }
 
     ImageMenu::ImageMenu(uint16_t img_size)
@@ -72,8 +83,14 @@ namespace Menu {
         this->raw_surfaces.push_back(newSurface);
         SDL_Texture* newTexture = SDL_CreateTextureFromSurface(rend, newSurface);
 
+        glblAssetManager.AddAsset(filepath, newTexture);
+
         UsableImage newUiImg;
-        newUiImg.SetImage(newTexture);
+        newUiImg.fpath = filepath;
+
+        if( SDL_Texture* text = glblAssetManager.GetAsset(filepath) ) {
+            newUiImg.SetImage(text);
+        }
 
         int32_t current_count = this->raw_surfaces.size() - 1;
         newUiImg.rect.w = this->image_size;
