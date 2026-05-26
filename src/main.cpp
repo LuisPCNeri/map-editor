@@ -18,6 +18,10 @@ TTF_Font* appFont = NULL;
 bool is_running = true;
 globalStateHandler* stateHandler = NULL;
 
+extern char *composition;
+extern Sint32 cursor;
+extern Sint32 selection_len;
+
 Managers::AssetManager glblAssetManager;
 
 static void SetUpToolbar(Toolbar::Toolbar* toolbar){
@@ -107,6 +111,16 @@ int main(){
 
             switch(event.type){
                 case SDL_MOUSEBUTTONDOWN:
+                    if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu) {
+                        if(stateHandler->createProjMenu->CheckTextBoxIsHovered(event.button.x, event.button.y)) {
+                            SDL_StartTextInput();
+                            stateHandler->createProjMenu->isTextBoxActive = true;
+                        } else {
+                            SDL_StopTextInput();
+                            stateHandler->createProjMenu->isTextBoxActive = false;
+                        }
+                    }
+
                     if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < screenH - img_menu.height )
                         viewport.is_mouse_down = true;
 
@@ -196,12 +210,26 @@ int main(){
                 case SDL_KEYDOWN:
                     if(event.key.keysym.scancode == SDL_SCANCODE_LCTRL)
                         viewport.ctrl_down = true;
-                    break;
+
+                    if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {
+                        if(event.key.keysym.sym == SDLK_BACKSPACE && stateHandler->createProjMenu->text.length() > 0) {
+                            stateHandler->createProjMenu->text.pop_back();
+                        }
+                        else if(event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER) {
+                            SDL_StopTextInput();
+                            stateHandler->createProjMenu->isTextBoxActive = false;
+                        }
+                    }
+                break;
                 case SDL_KEYUP:
                     if(event.key.keysym.scancode == SDL_SCANCODE_LCTRL)
                         viewport.ctrl_down = false;
-                    break;
-
+                break;
+                case SDL_TEXTINPUT:
+                    if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {
+                        stateHandler->createProjMenu->text += event.text.text;
+                    }
+                break;
                 case SDL_DROPFILE: {
                     char* droppedFileDir = event.drop.file;
                     std::string filepath(droppedFileDir);

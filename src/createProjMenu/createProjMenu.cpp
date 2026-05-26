@@ -22,6 +22,16 @@ namespace Menu {
             .h = this->h
         };
 
+        this->textBox = SDL_Rect {
+            .x = (int32_t) (this->x + (this->w * .1f)),
+            .y = (int32_t) (this->y + (this->h * .3f)),
+            .w = (int32_t) (this->w * .85f),
+            .h = (int32_t) (this->h * .25f)
+        };
+
+        this->text = "";
+        this->isHovered = false;
+        this->isTextBoxActive = false;
     }
 
     void CreateProjMenu::Show() {
@@ -49,6 +59,32 @@ namespace Menu {
         btn.rect.y = btn.GetBtnCoords()[1];
 
         this->btns.push_back(std::move(btn));
+    }
+
+    void CreateProjMenu::SetText(std::string text) {
+        this->text = text;
+    }
+
+    void CreateProjMenu::RenderText() {
+        SDL_Color white = {255, 255, 255, 255};
+
+        SDL_Surface* surface = TTF_RenderText_Solid(appFont, this->text.c_str(), white);
+        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(rend, surface);
+
+        int32_t w, h;
+        SDL_QueryTexture(textTexture, NULL, NULL, &w, &h);
+
+        SDL_Rect textRect = {
+            .x = (int32_t) (this->textBox.x + (this->textBox.w * .02f) ),
+            .y = (int32_t) (this->textBox.y + (this->textBox.h / 2) - (h / 2)),
+            .w = w,
+            .h = h
+        };
+
+        SDL_RenderCopy(rend, textTexture, NULL, &textRect);
+
+        SDL_FreeSurface(surface);
+        SDL_DestroyTexture(textTexture);
     }
 
     void CreateProjMenu::Render() {
@@ -81,8 +117,24 @@ namespace Menu {
             };
 
             SDL_RenderCopy(rend, btn.textTexture, NULL, &textRect);
+
+            SDL_SetRenderDrawColor(rend, 69, 69, 69, 255);
+            SDL_RenderFillRect(rend, &this->textBox);
+            SDL_SetRenderDrawColor(rend, 150, 150, 150, 255);
+            SDL_RenderDrawRect(rend, &this->textBox);
+            SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+
+            RenderText();
         }
 
     }
 
+    bool CreateProjMenu::CheckTextBoxIsHovered(int32_t x, int32_t y) {
+
+        return (x > this->textBox.x && 
+                x < this->textBox.x + this->textBox.w &&
+                y > this->textBox.y && 
+                y < this->textBox.y + this->textBox.h);
+
+    }
 }

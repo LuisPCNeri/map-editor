@@ -17,6 +17,7 @@ void OpenBtnHandleClick() {
 
 void CreateProjMenuReturnClickHandle() {
     if (stateHandler && stateHandler->createProjMenu) {
+        stateHandler->createProjMenu->text.clear();
         stateHandler->createProjMenu->Close();
     }
 }
@@ -24,6 +25,10 @@ void CreateProjMenuReturnClickHandle() {
 void CreateProjMenuCreateHandleClick() {
     std::cout << "CLICKED CREATE PROJECT" << std::endl;
     /// IMPORTANT missing real handling for creating the project directory and shit
+    if (stateHandler && stateHandler->createProjMenu) {
+        stateHandler->createProjMenu->text.clear();
+        stateHandler->createProjMenu->Close();
+    }
 }
 
 Menu::CreateProjMenu* CreateProjHandleClick() {
@@ -44,7 +49,7 @@ Menu::CreateProjMenu* CreateProjHandleClick() {
     Menu::CreateProjMenu* createProjMenu = new Menu::CreateProjMenu(x, y, 30.0f, 10.0f);
 
     int32_t btn_x = x + (int32_t)width - vw_size_t(5.0f) * 2 - 10;
-    int32_t btn_y = y + (int32_t)height - vh_size_t(2.0f) - 10;
+    int32_t btn_y = y + (int32_t) (vh_size_t(10.0f) - vh_size_t(2.0f) - (vh_size_t(10.0f) * .1f));
 
     Menu::MenuBtn createBtn(btn_x, btn_y, 5.0f, 2.0f, "Create", CreateProjHandleClick);
 
