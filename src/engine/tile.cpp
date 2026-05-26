@@ -36,7 +36,6 @@ namespace Map {
 
         if(this->texture) {
             SDL_RenderCopy(rend, this->texture, NULL, &dest);
-            return;
         }
 
         SDL_SetRenderDrawColor(rend, this->border_color.r, this->border_color.g, this->border_color.b, this->border_color.a);

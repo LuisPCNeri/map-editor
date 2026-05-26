@@ -159,7 +159,7 @@ int main(){
                             for(auto& img : img_menu.images) {
                                 if(!img.second.isHovered) continue;
 
-                                img.second.SelectImage(viewport);
+                                img.second.SelectImage(&viewport);
                                 break;
                             }
 

@@ -9,6 +9,8 @@ typedef struct globalStateHandler
     bool isCreateProjMenuOpen;
     Menu::CreateProjMenu* createProjMenu;
 
+    std::string currentProjectPath;
+
 } globalStateHandler;
 
 
