@@ -9,7 +9,8 @@ SRC = main.cpp \
       engine/menu.cpp \
       toolbar/toolbar.cpp \
       toolbar/buttons/toobarlBtn.cpp \
-      createProjMenu/createProjMenu.cpp \
+      toolbarMenus/createProjMenu.cpp \
+      toolbarMenus/openProjMenu.cpp \
       engine/assetManager/assetManager.cpp
 
 OBJ = $(SRC:%.cpp=build/%.o)

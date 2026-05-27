@@ -123,10 +123,9 @@ namespace Menu {
             SDL_SetRenderDrawColor(rend, 150, 150, 150, 255);
             SDL_RenderDrawRect(rend, &this->textBox);
             SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-
-            RenderText();
         }
 
+        RenderText();
     }
 
     bool CreateProjMenu::CheckTextBoxIsHovered(int32_t x, int32_t y) {

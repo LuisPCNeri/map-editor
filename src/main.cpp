@@ -38,7 +38,10 @@ static void SetUpToolbar(Toolbar::Toolbar* toolbar){
 
     std::string openStr = "Open";
     Toolbar::ToolbarBtn openBtn(openStr);
-    openBtn.OnClick = OpenBtnHandleClick;
+    openBtn.OnClick = [](){
+        stateHandler->openProjMenu = OpenBtnHandleClick();
+        if(stateHandler->openProjMenu) stateHandler->openProjMenu->OpenMenu();
+    };
 
     toolbar->ToolbarAddBtn(std::move(createProjBtn));
     toolbar->ToolbarAddBtn(std::move(saveBtn));
@@ -95,6 +98,8 @@ int main(){
     Menu::ImageMenu img_menu;
     Toolbar::Toolbar toolbar;
 
+    stateHandler->imageMenu = &img_menu;
+
     SetUpToolbar(&toolbar);
     
     int32_t last_mpos_x = 0;
@@ -135,7 +140,10 @@ int main(){
 
                         if(event.motion.y < toolbar.y + toolbar.height) {
                             for(auto& btn : toolbar.btns) {
-                                if(!btn.isHovered) continue;
+                                if(!btn.isHovered) {
+                                    continue;
+                                }
+
                                 btn.OnClick();
                                 break;
                             }
@@ -153,6 +161,22 @@ int main(){
 
                             /// Break out of switch statement
                             break;
+                        }
+
+                        if(stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {
+                            for(auto& btn : stateHandler->openProjMenu->btns) {
+                                if(!btn.isHovered) continue;
+                                btn.onPress();
+                                break;
+                            }
+
+                            /// Break out of switch statement
+                            break;
+                        }
+                        else {
+                            if(stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {
+                                stateHandler->openProjMenu->CloseMenu();
+                            }
                         }
 
                         if(event.motion.y > screenH - img_menu.height ){
@@ -194,6 +218,16 @@ int main(){
                                              event.motion.y < btn.rect.y + btn.rect.h);
                         }
                     }
+
+                    if(stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {
+                        for(auto& btn : stateHandler->openProjMenu->btns) {
+                            btn.isHovered = (event.motion.x > btn.rect.x && 
+                                             event.motion.x < btn.rect.x + btn.rect.w &&
+                                             event.motion.y > btn.rect.y && 
+                                             event.motion.y < btn.rect.y + btn.rect.h);
+                        }
+                    }
+
 
                     if(viewport.is_mouse_down){
                         int32_t tx = (event.motion.x - last_mpos_x) / viewport.tile_size;
@@ -250,6 +284,10 @@ int main(){
 
         if(stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu) {
             stateHandler->createProjMenu->Render();
+        }
+
+        if(stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {
+            stateHandler->openProjMenu->Render();
         }
 
         SDL_RenderPresent(rend);

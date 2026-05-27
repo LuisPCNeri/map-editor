@@ -7,15 +7,80 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <filesystem>
 
 extern globalStateHandler* stateHandler;
 extern SDL_Renderer* rend;
+
+#define BASE_PROJ_FOLDER ".MapMakerProjects"
 
 void SaveBtnHandleClick() {
 
 }
 
-void OpenBtnHandleClick() {
+void HandleChooseProjectToOpen(std::string path) {
+
+    /// Previous project cleanup
+    stateHandler->imageMenu->images.clear();
+    stateHandler->imageMenu->importedImages.clear();
+    stateHandler->imageMenu->raw_surfaces.clear();
+
+    stateHandler->currentProjectPath = path;
+
+    std::string assetsDir = path + "/assets";
+
+    struct stat sb;
+
+    for(const auto& entry : std::filesystem::directory_iterator(assetsDir)) {
+
+        std::filesystem::path outfilename = entry.path();
+        std::string outfilename_str = outfilename.string();
+
+        const char* path_char_ptr = outfilename_str.c_str();
+
+        /// Checks is file and not dir
+        if (stat(path_char_ptr, &sb) == 0 && !(sb.st_mode & S_IFDIR)){
+            std::cout << outfilename_str << std::endl;
+            if( outfilename.extension().string() != ".bmp") continue;
+            stateHandler->imageMenu->ImportImage(outfilename_str, rend);   
+        }
+    }
+
+    /// IMPORTANT missing the tile loading part
+    /// can only be done and tested after the save tile data stuff
+
+    if(stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {
+        stateHandler->openProjMenu->CloseMenu();
+    }
+}
+
+Menu::OpenProjMenu* OpenBtnHandleClick() {
+    if(stateHandler && stateHandler->openProjMenu) {
+        stateHandler->openProjMenu->OpenMenu();
+        return stateHandler->openProjMenu;
+    }
+
+    int32_t w, h;
+    SDL_GetRendererOutputSize(rend, &w, &h);
+
+    vw_size_t width(20.0f);
+    vh_size_t height(50.0f);
+
+    int32_t x = (w/2) - (width/2);
+    int32_t y = (h/2) - (height/2);
+
+    Menu::OpenProjMenu* openProjMenu = new Menu::OpenProjMenu(x, y, 50.0f, 20.0f);
+    std::vector<std::string> projects = Menu::OpenProjMenu::GetExistingProjects();
+
+    for(const auto& project : projects) {
+        Menu::MenuBtn btn(0, 0, 5.0f, 2.0f, project, [project]() {
+            HandleChooseProjectToOpen(project);
+        });
+
+        openProjMenu->AddBtn(std::move(btn));
+    }
+
+    return openProjMenu;
 
 }
 
@@ -35,14 +100,25 @@ void CreateProjMenuCreateHandleClick() {
         exit(EXIT_FAILURE);
     }
 
-    std::string path = std::string(homeDir) + "/" + stateHandler->createProjMenu->text;
+    std::string baseFolder = std::string(homeDir) + "/" + BASE_PROJ_FOLDER;
+    struct stat info;
+    if( stat(baseFolder.c_str(), &info) != 0 ) {
+        std::cerr << "Cannot access: " << baseFolder << std::endl;
+
+        mkdir(baseFolder.c_str(), 0777);
+    }
+    else if( info.st_mode & S_IFDIR ) {
+        std::cout << "Directory is a folder." << std::endl;
+    }
+
+    std::string path = std::string(homeDir) + "/" + BASE_PROJ_FOLDER + "/" + stateHandler->createProjMenu->text;
 
     if(mkdir(path.c_str(), 0777) == -1) {
         std::cerr << "FAILED CREATE PROJ DIRECTORY!" << std::endl;
         exit(EXIT_FAILURE);
     };
     
-    std::string fileIdentifierPath = std::string(homeDir) + "/" + stateHandler->createProjMenu->text + "/.MapProject";
+    std::string fileIdentifierPath = std::string(homeDir) + "/" + BASE_PROJ_FOLDER + "/" + stateHandler->createProjMenu->text + "/.MapProject";
 
     FILE* file = fopen(fileIdentifierPath.c_str(), "w");
     if(!file) {

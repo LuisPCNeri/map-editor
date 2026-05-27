@@ -99,9 +99,10 @@ namespace Menu {
             std::filesystem::copy_file(filepath, new_destination, std::filesystem::copy_options::overwrite_existing);
 
         } catch (std::filesystem::filesystem_error& e) {
-
-            std::cerr << "Failed to copy imported file: " << e.what() << std::endl;
-            return -1;
+            if( !std::filesystem::exists(new_destination) ){
+                std::cerr << "Failed to copy imported file: " << e.what() << std::endl;
+                return -1;
+            }
         }
 
         /// Checks if the image exists inside the importedImages set that contains the file path of all imported images
