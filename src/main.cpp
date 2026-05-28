@@ -99,6 +99,7 @@ int main(){
     Toolbar::Toolbar toolbar;
 
     stateHandler->imageMenu = &img_menu;
+    stateHandler->mapRenderer = &map_rend;
 
     SetUpToolbar(&toolbar);
     

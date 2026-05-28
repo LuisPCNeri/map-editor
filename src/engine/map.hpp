@@ -32,6 +32,8 @@ namespace Map {
             TileCoord coord;
 
             SDL_Texture* texture;
+            uint16_t textureId;
+
             SDL_Color border_color;
 
             SDL_Rect rect;
@@ -75,6 +77,9 @@ namespace Map {
         MapRenderer(int16_t render_padding = BASE_RENDER_PADDING);
         void RenderVisible(MapViewport* m);
         int SelectTile(int32_t mouse_x, int32_t mouse_y, MapViewport* m);
+
+        void ExportMapToBin(const std::string& fpath);
+        void ImportMapFromBinary(const std::string& fpath);
     };
 }
 

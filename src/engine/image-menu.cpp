@@ -30,6 +30,7 @@ namespace Menu {
         
         for(auto tile : vp->selected_tiles) {
             tile.second->texture = texture;
+            tile.second->textureId = this->texture_id;
             tile.second->DeSelect();
         }
 
@@ -166,6 +167,7 @@ namespace Menu {
 
         UsableImage newUiImg;
         newUiImg.fpath = new_destination;
+        newUiImg.texture_id = this->raw_surfaces.size();
 
         if( SDL_Texture* text = glblAssetManager.GetAsset(new_destination) ) {
             newUiImg.SetImage(text);

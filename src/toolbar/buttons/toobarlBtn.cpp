@@ -16,6 +16,12 @@ extern SDL_Renderer* rend;
 
 void SaveBtnHandleClick() {
 
+    if(stateHandler->currentProjectPath.empty()) {
+        std::cerr << "MUST HAVE A PROJECT OPEN TO SAVE." << std::endl;
+        return; 
+    }
+
+    stateHandler->mapRenderer->ExportMapToBin(stateHandler->currentProjectPath + "/data/map.bin");
 }
 
 void HandleChooseProjectToOpen(std::string path) {
@@ -24,6 +30,8 @@ void HandleChooseProjectToOpen(std::string path) {
     stateHandler->imageMenu->images.clear();
     stateHandler->imageMenu->importedImages.clear();
     stateHandler->imageMenu->raw_surfaces.clear();
+    
+    stateHandler->mapRenderer->grid.clear();
 
     stateHandler->currentProjectPath = path;
 
@@ -45,6 +53,8 @@ void HandleChooseProjectToOpen(std::string path) {
             stateHandler->imageMenu->ImportImage(outfilename_str, rend);   
         }
     }
+
+    stateHandler->mapRenderer->ImportMapFromBinary(path + "/data/map.bin");
 
     /// IMPORTANT missing the tile loading part
     /// can only be done and tested after the save tile data stuff

@@ -39,6 +39,8 @@ namespace Menu {
             ImageCoord coord;
             std::string fpath = "";
 
+            uint16_t texture_id;
+
             SDL_Texture* texture;
             SDL_Rect rect;
             bool isHovered = 0;

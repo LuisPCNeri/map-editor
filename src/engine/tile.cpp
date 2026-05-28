@@ -16,6 +16,8 @@ namespace Map {
         this->rect.x = -1;
 
         this->border_color = {69, 69, 69, 100};
+
+        this->textureId = 0;
     }
     Tile::Tile(TileCoord coords, int32_t tile_size){
         this->texture = nullptr;
@@ -27,6 +29,8 @@ namespace Map {
         this->rect.h = tile_size;
 
         this->border_color = {69, 69, 69, 100};
+
+        this->textureId = 0;
     }
     Tile::~Tile(){
         
