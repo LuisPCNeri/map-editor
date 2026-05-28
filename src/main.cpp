@@ -126,7 +126,7 @@ int main(){
                         }
                     }
 
-                    if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < screenH - img_menu.height )
+                    if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < img_menu.rect.y )
                         viewport.is_mouse_down = true;
 
                     last_mpos_x = event.motion.x;
@@ -179,7 +179,7 @@ int main(){
                             }
                         }
 
-                        if(event.motion.y > screenH - img_menu.height ){
+                        if(event.motion.y > img_menu.rect.y ){
                             for(auto& img : img_menu.images) {
                                 if(!img.second.isHovered) continue;
 

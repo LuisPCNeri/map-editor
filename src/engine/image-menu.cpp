@@ -6,9 +6,15 @@
 #include "../globalStateHandler.hpp"
 
 #include <filesystem>
+#include <SDL2/SDL_ttf.h>
 
 extern Managers::AssetManager glblAssetManager;
 extern globalStateHandler* stateHandler;
+
+extern SDL_Renderer* rend;
+extern TTF_Font* appFont;
+
+static SDL_Texture* imgMenuText = NULL;
 namespace Menu {
 
     int8_t UsableImage::SetImage(SDL_Texture* tex) {
@@ -40,13 +46,39 @@ namespace Menu {
 
         this->image_size = img_size;
         this->rect.x = 0;
-        this->rect.y = h - this->height;
+        this->rect.y = h - vh_size_t(20.0f) - 75;
         this->rect.w = (int32_t) this->width;
         this->rect.h = (int32_t) this->height;
     }
 
+    /*ImageMenu::~ImageMenu() {
+        SDL_DestroyTexture(imgMenuText);
+    }*/
+
     void ImageMenu::Render() {
         SDL_RenderFillRect(rend, &this->rect);
+
+        SDL_SetRenderDrawColor(rend, 150, 150, 150, 255);
+        SDL_RenderDrawRect(rend, &this->rect);
+        SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+
+        if(!imgMenuText) {
+            SDL_Surface* surf = TTF_RenderText_Solid(appFont, "Image Menu", {150, 150, 150, 255});
+            imgMenuText = SDL_CreateTextureFromSurface(rend, surf);
+            SDL_FreeSurface(surf);
+        }
+
+        int32_t w,h;
+        SDL_QueryTexture(imgMenuText, NULL, NULL, &w, &h);
+
+        SDL_Rect textRect = {
+            .x = (int32_t) (this->rect.x + (this->rect.w * .005f)),
+            .y = (int32_t) (this->rect.y + (this->rect.h * .05f)),
+            .w = w,
+            .h = h
+        };
+
+        SDL_RenderCopy(rend, imgMenuText, NULL, &textRect);
 
         for (auto const& pair : this->images) {
             SDL_RenderCopy(rend, pair.second.texture, NULL, &pair.second.rect);
@@ -142,8 +174,8 @@ namespace Menu {
         int32_t current_count = this->raw_surfaces.size() - 1;
         newUiImg.rect.w = this->image_size;
         newUiImg.rect.h = this->image_size;
-        newUiImg.rect.x = this->rect.x + (current_count * this->image_size);
-        newUiImg.rect.y = this->rect.y;
+        newUiImg.rect.x = this->rect.x + (this->rect.w * .005f) + (current_count * this->image_size);
+        newUiImg.rect.y = this->rect.y + (this->rect.h * .15f); 
 
         ImageCoord coord = {(int32_t)this->raw_surfaces.size(), 0};
         this->images[coord] = newUiImg;
