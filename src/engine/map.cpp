@@ -85,12 +85,49 @@ namespace Map {
         this->ctrl_down = false;
     }
 
-    void MapViewport::ZoomIn() {
-        
+    void MapViewport::ZoomIn(int32_t mx, int32_t my) {
+        if(this->current_zoom_level >= 3) return;
+
+        float world_x = (float)mx / this->tile_size + this->offsetX;
+        float world_y = (float)my / this->tile_size + this->offsetY;
+
+        this->current_zoom_level++;
+        this->tile_size = ALLOWED_ZOOMS[this->current_zoom_level];
+
+        this->offsetX = std::round(world_x - ((float)mx / this->tile_size));
+        this->offsetY = std::round(world_y - ((float)my / this->tile_size));
     };
 
-    void MapViewport::ZoomOut() {
-        
+    void MapViewport::ZoomOut(int32_t mx, int32_t my) {
+        if(this->current_zoom_level <= 0) return;
+
+        float world_x = (float)mx / this->tile_size + this->offsetX;
+        float world_y = (float)my / this->tile_size + this->offsetY;
+
+        this->current_zoom_level--;
+        this->tile_size = ALLOWED_ZOOMS[this->current_zoom_level];
+
+        this->offsetX = std::round(world_x - ((float)mx / this->tile_size));
+        this->offsetY = std::round(world_y - ((float)my / this->tile_size));
+    }
+
+    void MapViewport::ResetZoom() {
+        if(this->current_zoom_level == 1) return;
+
+        int32_t w, h;
+        SDL_GetRendererOutputSize(rend, &w, &h);
+
+        int32_t center_x = w / 2;
+        int32_t center_y = h / 2;
+
+        float world_center_x = (float)center_x / this->tile_size + this->offsetX;
+        float world_center_y = (float)center_y / this->tile_size + this->offsetY;
+
+        this->current_zoom_level = 1; 
+        this->tile_size = ALLOWED_ZOOMS[this->current_zoom_level];
+
+        this->offsetX = std::round(world_center_x - ((float)center_x / this->tile_size));
+        this->offsetY = std::round(world_center_y - ((float)center_y / this->tile_size));
     }
 
     void MapViewport::Drag(int32_t new_mouse_x, int32_t new_mouse_y) {

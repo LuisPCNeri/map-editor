@@ -268,6 +268,9 @@ int main(){
                     if(event.key.keysym.scancode == SDL_SCANCODE_LSHIFT)
                         viewport.lshift_down = true;
 
+                    if(viewport.ctrl_down && event.key.keysym.sym == SDLK_q)
+                        viewport.ResetZoom(); 
+
                     if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {
                         if(event.key.keysym.sym == SDLK_BACKSPACE && stateHandler->createProjMenu->text.length() > 0) {
                             stateHandler->createProjMenu->text.pop_back();
@@ -297,6 +300,20 @@ int main(){
                     SDL_free(droppedFileDir);
                     break;
                 }
+                case SDL_MOUSEWHEEL:
+                    if(viewport.ctrl_down) {
+                        int32_t mx, my;
+                        SDL_GetMouseState(&mx, &my);
+
+                        if(event.wheel.y > 0) {
+                            viewport.ZoomIn(mx, my);
+                        }
+
+                        else if(event.wheel.y < 0) {
+                            viewport.ZoomOut(mx, my);
+                        }
+                    }
+                break;
             }
         }
 

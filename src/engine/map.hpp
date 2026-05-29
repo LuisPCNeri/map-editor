@@ -53,6 +53,10 @@ namespace Map {
 
     class MapViewport {
 
+        private:
+            static constexpr uint8_t ALLOWED_ZOOMS[4] = {16, 32, 64, 128};
+            int8_t current_zoom_level = 2;
+
         public:
             std::map<TileCoord, Tile*> selected_tiles;
 
@@ -65,8 +69,9 @@ namespace Map {
             bool lshift_down = false;
             uint8_t tile_size;
         MapViewport();
-        void ZoomIn ();
-        void ZoomOut();
+        void ZoomIn (int32_t mx, int32_t my);
+        void ZoomOut(int32_t mx, int32_t my);
+        void ResetZoom();
         void Drag   (int32_t new_mouse_x, int32_t new_mouse_y);
     };
 
