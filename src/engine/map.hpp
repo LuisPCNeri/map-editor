@@ -62,6 +62,7 @@ namespace Map {
             float zoom;
             bool is_mouse_down;
             bool ctrl_down;
+            bool lshift_down = false;
             uint8_t tile_size;
         MapViewport();
         void ZoomIn ();
@@ -76,7 +77,9 @@ namespace Map {
             int16_t render_padding;
         MapRenderer(int16_t render_padding = BASE_RENDER_PADDING);
         void RenderVisible(MapViewport* m);
+
         int SelectTile(int32_t mouse_x, int32_t mouse_y, MapViewport* m);
+        void SelectTileRectangle(MapViewport* m);
 
         void ExportMapToBin(const std::string& fpath);
         void ImportMapFromBinary(const std::string& fpath);

@@ -192,6 +192,16 @@ int main(){
                         }
 
                         if(!mouse_moved_x && !mouse_moved_y){
+
+                            if(viewport.lshift_down && viewport.ctrl_down) {
+
+                                if(viewport.selected_tiles.size() == 1) {
+                                    map_rend.SelectTile(last_mpos_x, last_mpos_y, &viewport);
+                                    map_rend.SelectTileRectangle(&viewport);
+                                    break;
+                                }
+                            }
+                            
                             map_rend.SelectTile(last_mpos_x, last_mpos_y, &viewport);
                         }
                     }
@@ -245,6 +255,8 @@ int main(){
                 case SDL_KEYDOWN:
                     if(event.key.keysym.scancode == SDL_SCANCODE_LCTRL)
                         viewport.ctrl_down = true;
+                    if(event.key.keysym.scancode == SDL_SCANCODE_LSHIFT)
+                        viewport.lshift_down = true;
 
                     if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {
                         if(event.key.keysym.sym == SDLK_BACKSPACE && stateHandler->createProjMenu->text.length() > 0) {
@@ -259,6 +271,8 @@ int main(){
                 case SDL_KEYUP:
                     if(event.key.keysym.scancode == SDL_SCANCODE_LCTRL)
                         viewport.ctrl_down = false;
+                    if(event.key.keysym.scancode == SDL_SCANCODE_LSHIFT)
+                        viewport.lshift_down = false;
                 break;
                 case SDL_TEXTINPUT:
                     if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {

@@ -122,6 +122,37 @@ namespace Map {
         return 0;
     }
 
+    void MapRenderer::SelectTileRectangle(MapViewport* m) {
+
+        if(m->selected_tiles.size() != 2) {
+            std::cerr << "Only two tiles can be selected for RECTANGLE SELECT." << std::endl;
+            return;
+        }
+
+        int32_t first_x = m->selected_tiles.begin()->first.x;
+        int32_t last_x  = m->selected_tiles.rbegin()->first.x;
+
+        int32_t first_y = m->selected_tiles.begin()->first.y;
+        int32_t last_y  = m->selected_tiles.rbegin()->first.y;
+
+        int32_t min_x = (first_x < last_x) ? first_x : last_x;
+        int32_t max_x = (first_x > last_x) ? first_x : last_x;
+        int32_t min_y = (first_y < last_y) ? first_y : last_y;
+        int32_t max_y = (first_y > last_y) ? first_y : last_y;
+
+        for(int32_t x = min_x; x <= max_x; x++) {
+
+            auto it = this->grid.lower_bound(Map::TileCoord(x, min_y));
+            while (it != this->grid.end() && it->first.x == x && it->first.y <= max_y) {
+                
+                m->selected_tiles.insert({it->first, &it->second});
+                it->second.Select();
+                it++;
+            }
+        }
+
+    }
+
     void MapRenderer::ExportMapToBin(const std::string& fpath) {
         if(this->grid.empty()) return;
 
