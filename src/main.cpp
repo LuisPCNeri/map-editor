@@ -100,6 +100,7 @@ int main(){
 
     stateHandler->imageMenu = &img_menu;
     stateHandler->mapRenderer = &map_rend;
+    stateHandler->mapViewport = &viewport;
 
     SetUpToolbar(&toolbar);
     
@@ -201,7 +202,7 @@ int main(){
                                     break;
                                 }
                             }
-                            
+
                             map_rend.SelectTile(last_mpos_x, last_mpos_y, &viewport);
                         }
                     }
@@ -238,7 +239,16 @@ int main(){
                                              event.motion.y < btn.rect.y + btn.rect.h);
                         }
                     }
+                    
+                    if(viewport.ctrl_down && viewport.lshift_down && viewport.is_mouse_down) {
+                        
+                        if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < img_menu.rect.y) {
+                            map_rend.SelectTile(event.motion.x, event.motion.y, &viewport);
+                        }  
 
+                        /// To prevent the screen from dragging as the paintbrush includes holding down the LMB
+                        break;
+                    }
 
                     if(viewport.is_mouse_down){
                         int32_t tx = (event.motion.x - last_mpos_x) / viewport.tile_size;

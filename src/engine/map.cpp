@@ -236,6 +236,9 @@ namespace Map {
         }
 
         this->grid.clear();
+        if(stateHandler && stateHandler->mapViewport){
+            stateHandler->mapViewport->selected_tiles.clear();
+        }
 
         Menu::ImageMenu* imgMenu = nullptr;
         if (stateHandler && stateHandler->imageMenu) {
