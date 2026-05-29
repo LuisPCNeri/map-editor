@@ -15,6 +15,16 @@ Small section explaining controls so I (myself) do not forget them.
 
 **DRAG SCREEN** : HOLD LMB + MOVE MOUSE.
 
+**ZOOM IN** : LCTRL + MW UP.
+
+**ZOOM OUT** : LCTRL + MW DOWN.
+
+**RESET ZOOM** : LCTRL + Q.
+
+### NOT DONE
+
+**MOVE TO CENTER OF MAP** : LCTRL + 0.
+
 ## TEXTURE SELECTING
 
 With one or more tiles selected click on a texture in the **IMAGE MENU** to replace those tiles' textures to the new one you just pressed.
