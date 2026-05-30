@@ -95,6 +95,38 @@ namespace Menu {
         void SetYPos(int32_t y);
     };
 
+    class SpawnIdMenu {
+        private:
+            SDL_Rect textBox;
+            uint16_t target_texture_id;
+            bool is_open = false;
+
+            void RenderText();
+        public:
+            SDL_Rect rect;
+            std::string inp_text;
+            Menu::MenuBtn appl_btn;
+
+            bool is_textbox_active = false;
+        SpawnIdMenu(int32_t x, int32_t y, float w_percent, float h_percent);
+        SpawnIdMenu(int32_t x, int32_t y, float w_percent, float h_percent, uint16_t texture_id);
+
+        void Open() {
+            this->is_open = true;
+        };
+        void Close() {
+            this->is_open = false;
+        };
+        bool IsOpen() {
+            return this->is_open;
+        };
+        bool TextBoxIsHovered(int32_t x, int32_t y);
+
+        void ApplyChanges();
+
+        void Render();
+    };
+
 }
 
 #endif

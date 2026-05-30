@@ -11,7 +11,8 @@ SRC = main.cpp \
       toolbar/buttons/toobarlBtn.cpp \
       toolbarMenus/createProjMenu.cpp \
       toolbarMenus/openProjMenu.cpp \
-      engine/assetManager/assetManager.cpp
+      engine/assetManager/assetManager.cpp \
+      engine/SpawnIdMenu.cpp
 
 OBJ = $(SRC:%.cpp=build/%.o)
 TARGET = map-editor

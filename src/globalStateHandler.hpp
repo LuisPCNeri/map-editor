@@ -1,7 +1,7 @@
 #ifndef __GLOBALSTATEHANDLER_H__
 #define __GLOBALSTATEHANDLER_H__
 
-namespace Menu { class CreateProjMenu; class OpenProjMenu; class ImageMenu;}
+namespace Menu { class CreateProjMenu; class OpenProjMenu; class ImageMenu; class SpawnIdMenu;}
 namespace Map  { class MapRenderer; class MapViewport;}
 
 typedef struct globalStateHandler
@@ -12,6 +12,8 @@ typedef struct globalStateHandler
 
     Menu::OpenProjMenu* openProjMenu;
     Menu::ImageMenu* imageMenu;
+
+    Menu::SpawnIdMenu* spawnIdMenu;
 
     Map::MapRenderer* mapRenderer;
     Map::MapViewport* mapViewport;
