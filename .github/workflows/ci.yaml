@@ -1,0 +1,34 @@
+name: Map Editor CI Build
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  build-linux:
+    name: Ubuntu Build Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-ttf-dev \
+          pkg-config \
+          xxd \
+          libdecor-0-dev \
+          libharfbuzz-dev
+
+    - name: Compile Standard (Dynamic)
+      run: make WERROR=-Werror
+
+    - name: Compile Standalone (Static)
+      run: make static WERROR=-Werror
