@@ -58,6 +58,8 @@ namespace Map {
         
         this->texture = nullptr;
         this->textureId = 0;
+        this->spawnable_ids.clear();
+        this->path.clear();
     }
 
 }
