@@ -262,6 +262,13 @@ int main(){
                                 img.second.SelectImage(&viewport);
                                 break;
                             }
+                            
+                            /// No image selected assume selection clear
+                            for(auto& tile : viewport.selected_tiles) {
+                                tile.second->DeSelect();
+                            }
+
+                            viewport.selected_tiles.clear();
 
                             break;
                         }
@@ -356,12 +363,24 @@ int main(){
 
                     if(event.key.keysym.scancode == SDL_SCANCODE_DELETE) {
 
-                        // Do nothing if there are no selected tiles
-                        if(viewport.selected_tiles.size() <= 0) break;
+                        // If no selected tiles assume Absolute Texture Removal
+                        if(viewport.selected_tiles.empty()) {
+                            img_menu.AbsoluteRemoveTexture(&map_rend);
+                            break;
+                        }
 
                         for(auto& tile : viewport.selected_tiles) {
                             tile.second->DeleteTexture();
                         }
+                    }
+
+                    /// Clear all selected tiles on ESCAPE
+                    if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                        for(auto& tile : viewport.selected_tiles) {
+                            tile.second->DeSelect();
+                        }
+
+                        viewport.selected_tiles.clear();
                     }
 
                     if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {
