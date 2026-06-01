@@ -7,11 +7,8 @@ namespace Menu {
 
 
     class OpenProjMenu {
-        private:
-
-            SDL_Rect dropdown;
-
         public:
+            SDL_Rect dropdown;
             std::vector<Menu::MenuBtn> btns;
             bool isMenuOpen = false;
             bool isHovered = false;
