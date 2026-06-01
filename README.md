@@ -66,16 +66,6 @@ brew install sdl2 sdl2_image sdl2_ttf pkg-config
 ```
  
 ### Compilation
- 
-Before compiling for the first time, you must bake the default font into a C++ header file. This allows the application to read the font directly from memory without relying on local filesystem paths:
-
-```bash
-cd src
-xxd -i fonts/arial.ttf > font_data.h
-cd ..
-```
-
-The project uses a `Makefile` with two separate build pipelines. From the repository root:
 
 **Standard Build (Dynamic)** For rapid compilation and debugging during day-to-day development:
 
