@@ -53,6 +53,23 @@ Menu::OpenProjMenu* OpenBtnHandleClick() {
         return stateHandler->openProjMenu;
     }
 
+    const char* homeDir = std::getenv("HOME");
+    if (!homeDir) {
+        std::cerr << "CRITICAL ERROR: Could not find HOME environment variable!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::string baseFolder = std::string(homeDir) + "/" + BASE_PROJ_FOLDER;
+    struct stat info;
+    if( stat(baseFolder.c_str(), &info) != 0 ) {
+        std::cerr << "Cannot access: " << baseFolder << std::endl;
+
+        mkdir(baseFolder.c_str(), 0777);
+    }
+    else if( info.st_mode & S_IFDIR ) {
+        std::cout << "Directory is a folder." << std::endl;
+    }
+
     int32_t w, h;
     SDL_GetRendererOutputSize(rend, &w, &h);
 

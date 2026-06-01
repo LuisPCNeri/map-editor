@@ -10,6 +10,7 @@
 #include "toolbar/buttons/toolbarBtn.hpp"
 
 #include "engine/assetManager/assetManager.hpp"
+#include "font_data.h"
 
 #define FONT_DIRECTORY "fonts/arial.ttf"
 
@@ -59,9 +60,11 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-    appFont = TTF_OpenFont(FONT_DIRECTORY, 16);
+    SDL_RWops* rw = SDL_RWFromConstMem(fonts_arial_ttf, fonts_arial_ttf_len);
+    appFont = TTF_OpenFontRW(rw, 1, 16);
+    
     if (!appFont) {
-        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
+        std::cerr << "Failed to load font from memory: " << TTF_GetError() << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -146,6 +149,40 @@ int main(){
                         } else {
                             SDL_StopTextInput();
                             stateHandler->createProjMenu->isTextBoxActive = false;
+                        }
+                    }
+
+                    if(stateHandler && stateHandler->createProjMenu && stateHandler->isCreateProjMenuOpen) {
+                        SDL_Rect rect = {
+                            .x = stateHandler->createProjMenu->x,
+                            .y = stateHandler->createProjMenu->y,
+                            .w = stateHandler->createProjMenu->w,
+                            .h = stateHandler->createProjMenu->h
+                        };
+                        
+                        const bool is_click_inside = (
+                            event.button.x >= rect.x && event.button.x <= rect.x + rect.w &&
+                            event.button.y >= rect.y && event.button.y <= rect.y + rect.h
+                        );
+
+                        if(!is_click_inside) {
+                            stateHandler->createProjMenu->Close();
+                            break;
+                        }
+                        
+                    }
+
+                    if(stateHandler && stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {
+                        SDL_Rect rect = stateHandler->openProjMenu->dropdown;
+                        
+                        const bool is_click_inside = (
+                            event.button.x >= rect.x && event.button.x <= rect.x + rect.w &&
+                            event.button.y >= rect.y && event.button.y <= rect.y + rect.h
+                        );
+
+                        if(!is_click_inside) {
+                            stateHandler->openProjMenu->CloseMenu();
+                            break;
                         }
                     }
 
