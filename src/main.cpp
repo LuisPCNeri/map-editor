@@ -354,6 +354,16 @@ int main(){
                     if(viewport.ctrl_down && event.key.keysym.sym == SDLK_q)
                         viewport.ResetZoom(); 
 
+                    if(event.key.keysym.scancode == SDL_SCANCODE_DELETE) {
+
+                        // Do nothing if there are no selected tiles
+                        if(viewport.selected_tiles.size() <= 0) break;
+
+                        for(auto& tile : viewport.selected_tiles) {
+                            tile.second->DeleteTexture();
+                        }
+                    }
+
                     if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {
                         if(event.key.keysym.sym == SDLK_BACKSPACE && stateHandler->createProjMenu->text.length() > 0) {
                             stateHandler->createProjMenu->text.pop_back();

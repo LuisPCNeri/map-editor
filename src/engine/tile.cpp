@@ -54,4 +54,10 @@ namespace Map {
         this->border_color = BASE_BORDER_COLOR;
     }
 
+    void Tile::DeleteTexture() {
+        
+        this->texture = nullptr;
+        this->textureId = 0;
+    }
+
 }

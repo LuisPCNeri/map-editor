@@ -15,7 +15,7 @@ extern SDL_Renderer* rend;
 #pragma pack(push, 1)
 
 struct FileTile {
-    uint8_t spawn_id_count;               // How many IDs are actually used
+    uint8_t spawn_id_count;
     int16_t spawn_ids[MAX_SPAWN_IDS];
     uint16_t texture_id;
 };
