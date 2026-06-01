@@ -49,6 +49,8 @@ namespace Map {
         void TileDraw(SDL_Rect dest);
         void Select();
         void DeSelect();
+
+        void DeleteTexture();
     };
 
     class MapViewport {
