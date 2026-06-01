@@ -41,9 +41,12 @@ namespace Menu {
 
             uint16_t texture_id;
 
+            SDL_Color* border_color = nullptr;
+
             SDL_Texture* texture;
             SDL_Rect rect;
             bool isHovered = 0;
+            bool is_selected = false;
         int8_t SetImage(SDL_Texture* texture);
         void SelectImage(Map::MapViewport* viewport);
     };
@@ -55,6 +58,8 @@ namespace Menu {
             std::vector<SDL_Surface*> raw_surfaces;
             std::set<std::string> importedImages;
 
+            uint32_t menu_padding = 8; // px
+
             vh_size_t height;
             vw_size_t width;
             uint16_t image_size;
@@ -63,6 +68,10 @@ namespace Menu {
         void Render();
         int8_t ImportImage(const std::string& filepath, SDL_Renderer* rend);
         void PackAndSaveSpriteSheet();
+        void AbsoluteRemoveTexture(Map::MapRenderer* mr);
+        void SaveManifest();
+        void LoadFromManifest(const std::string& projectPath, SDL_Renderer* rend);
+
     };
 
     class MenuBtn {

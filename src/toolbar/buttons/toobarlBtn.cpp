@@ -29,35 +29,18 @@ void HandleChooseProjectToOpen(std::string path) {
     /// Previous project cleanup
     stateHandler->imageMenu->images.clear();
     stateHandler->imageMenu->importedImages.clear();
+
+    for (auto* surf : stateHandler->imageMenu->raw_surfaces) {
+        if (surf) SDL_FreeSurface(surf);
+    }
     stateHandler->imageMenu->raw_surfaces.clear();
     
     stateHandler->mapRenderer->grid.clear();
 
     stateHandler->currentProjectPath = path;
 
-    std::string assetsDir = path + "/assets";
-
-    struct stat sb;
-
-    for(const auto& entry : std::filesystem::directory_iterator(assetsDir)) {
-
-        std::filesystem::path outfilename = entry.path();
-        std::string outfilename_str = outfilename.string();
-
-        const char* path_char_ptr = outfilename_str.c_str();
-
-        /// Checks is file and not dir
-        if (stat(path_char_ptr, &sb) == 0 && !(sb.st_mode & S_IFDIR)){
-            std::cout << outfilename_str << std::endl;
-            if( outfilename.extension().string() != ".bmp") continue;
-            stateHandler->imageMenu->ImportImage(outfilename_str, rend);   
-        }
-    }
-
+    stateHandler->imageMenu->LoadFromManifest(path, rend);
     stateHandler->mapRenderer->ImportMapFromBinary(path + "/data/map.bin");
-
-    /// IMPORTANT missing the tile loading part
-    /// can only be done and tested after the save tile data stuff
 
     if(stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {
         stateHandler->openProjMenu->CloseMenu();
