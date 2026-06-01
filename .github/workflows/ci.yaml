@@ -28,7 +28,9 @@ jobs:
           libharfbuzz-dev
 
     - name: Compile Standard (Dynamic)
+      working-directory: ./src
       run: make WERROR=-Werror
 
     - name: Compile Standalone (Static)
+      working-directory: ./src
       run: make static WERROR=-Werror
