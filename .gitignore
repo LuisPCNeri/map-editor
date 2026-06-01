@@ -1,2 +1,3 @@
 *.o
 map-editor
+font_data.h
