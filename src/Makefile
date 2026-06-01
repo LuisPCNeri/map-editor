@@ -1,5 +1,7 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -I. -Iengine -I/usr/include/SDL2 -D_REENTRANT
+
+WERROR ?=
+CXXFLAGS = -Wall -Wextra $(WERROR) -std=c++17 -I. -Iengine -I/usr/include/SDL2 -D_REENTRANT
 
 LDFLAGS = -lSDL2 -lSDL2_ttf -lSDL2_image
 
