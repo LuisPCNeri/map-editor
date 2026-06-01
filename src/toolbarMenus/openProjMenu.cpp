@@ -63,28 +63,26 @@ namespace Menu {
     }
 
     void OpenProjMenu::AddBtn(Menu::MenuBtn btn) {
-        if(!this->btns.empty()) {
-            vh_size_t height = this->btns.back().GetBtnHeight();
+        int32_t padding = 10;
 
+        if(!this->btns.empty()) {
+            Menu::MenuBtn& lastBtn = this->btns.back();
+            
             btn.rect.x = this->dropdown.x;
-            btn.rect.y = this->dropdown.y + (int32_t) (height * this->btns.size()) + (int32_t) (this->dropdown.h * .02f);
+            btn.rect.y = lastBtn.rect.y + lastBtn.GetBtnHeight() + padding;
             btn.rect.w = this->dropdown.w;
 
             this->btns.push_back(std::move(btn));
-
-            if(this->btns.size() > 0) this->dropdown.h = this->btns.size() * btn.GetBtnHeight() + (this->btns.size() * (this->dropdown.h * .02f));
-
-            return;
+        } 
+        else {
+            btn.rect.x = this->dropdown.x;
+            btn.rect.y = this->dropdown.y + padding;
+            btn.rect.w = this->dropdown.w;
+            
+            this->btns.push_back(std::move(btn));
         }
 
-        btn.rect = {
-            .x = this->dropdown.x,
-            .y = this->dropdown.y + (int32_t) (this->dropdown.h * .02f),
-            .w = this->dropdown.w,
-            .h = btn.rect.h
-        };
-
-        this->btns.push_back(std::move(btn));
+        this->dropdown.h = (this->btns.size() * this->btns.back().GetBtnHeight()) + ((this->btns.size() + 1) * padding);
     }
 
     void OpenProjMenu::Render() {

@@ -49,6 +49,8 @@ namespace Map {
         void TileDraw(SDL_Rect dest);
         void Select();
         void DeSelect();
+
+        void DeleteTexture();
     };
 
     class MapViewport {
@@ -76,7 +78,6 @@ namespace Map {
     };
 
     class MapRenderer {
-
         public:
             std::map<TileCoord, Tile> grid;
             int16_t render_padding;
@@ -88,6 +89,9 @@ namespace Map {
 
         void ExportMapToBin(const std::string& fpath);
         void ImportMapFromBinary(const std::string& fpath);
+
+        void SetSpawnIdsByTexture(uint16_t target_texture_id, std::vector<int16_t> new_ids);
+        std::vector<uint16_t> GetSpawnIdsByTexture(uint16_t target_texture_id);
     };
 }
 

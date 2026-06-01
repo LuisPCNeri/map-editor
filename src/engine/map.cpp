@@ -10,10 +10,13 @@ extern SDL_Renderer* rend;
 #include "../globalStateHandler.hpp"
 #include "menu.hpp"
 
+#define MAX_SPAWN_IDS 32
+
 #pragma pack(push, 1)
 
 struct FileTile {
-    int8_t spawn_pool_id;
+    uint8_t spawn_id_count;
+    int16_t spawn_ids[MAX_SPAWN_IDS];
     uint16_t texture_id;
 };
 
@@ -238,11 +241,17 @@ namespace Map {
                         auto it = this->grid.find(Map::TileCoord(world_x, world_y));
                         
                         if (it != this->grid.end()) {
-                            chunk_data[x][y].spawn_pool_id = it->second.spawnable_ids.empty() ? -1 : it->second.spawnable_ids[0];
                             chunk_data[x][y].texture_id = it->second.textureId;
+
+                            uint8_t count = 0;
+                            for (size_t i = 0; i < it->second.spawnable_ids.size() && i < MAX_SPAWN_IDS; i++) {
+                                chunk_data[x][y].spawn_ids[i] = it->second.spawnable_ids[i];
+                                count++;
+                            }
+                            chunk_data[x][y].spawn_id_count = count;
+
                         } else {
-                            // Blank padding tile at map border
-                            chunk_data[x][y].spawn_pool_id = -1;
+                            chunk_data[x][y].spawn_id_count = 0;
                             chunk_data[x][y].texture_id = 0; 
                         }
                     }
@@ -294,8 +303,7 @@ namespace Map {
                         
                         FileTile& fTile = chunk_data[x][y];
                         
-                        // If it's an empty padding tile, skip it
-                        if (fTile.texture_id == 0 && fTile.spawn_pool_id == -1) {
+                        if (fTile.texture_id == 0 && fTile.spawn_id_count == 0) {
                             continue;
                         }
 
@@ -309,8 +317,8 @@ namespace Map {
                         Tile new_tile(coord, BASE_TILE_SIZE);
                         
                         new_tile.textureId = fTile.texture_id;
-                        if (fTile.spawn_pool_id != -1) {
-                            new_tile.spawnable_ids.push_back(fTile.spawn_pool_id);
+                        for (uint8_t i = 0; i < fTile.spawn_id_count; i++) {
+                            new_tile.spawnable_ids.push_back(fTile.spawn_ids[i]);
                         }
 
                         // RESTORE TEXTURE POINTER:
@@ -330,5 +338,29 @@ namespace Map {
         
         infile.close();
         std::cout << "Successfully loaded map from: " << filepath << std::endl;
+    }
+
+    void MapRenderer::SetSpawnIdsByTexture(uint16_t target_texture_id, std::vector<int16_t> new_ids) {
+        if (target_texture_id == 0) return;
+
+        int count = 0;
+        for (auto& pair : this->grid) {
+            if (pair.second.textureId == target_texture_id) {
+                pair.second.spawnable_ids = new_ids;
+                count++;
+            }
+        }
+        std::cout << "Updated " << count << " tiles with new spawn IDs." << std::endl;
+    }
+
+    std::vector<uint16_t> MapRenderer::GetSpawnIdsByTexture(uint16_t target_texture_id) {
+        if (target_texture_id == 0) return {};
+
+        for (auto& pair : this->grid) {
+            if (pair.second.textureId == target_texture_id && !pair.second.spawnable_ids.empty()) {
+                return std::vector<uint16_t>(pair.second.spawnable_ids.begin(), pair.second.spawnable_ids.end());
+            }
+        }
+        return {};
     }
 }

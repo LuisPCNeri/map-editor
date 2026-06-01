@@ -118,6 +118,27 @@ int main(){
 
             switch(event.type){
                 case SDL_MOUSEBUTTONDOWN:
+                    if(stateHandler && stateHandler->spawnIdMenu && stateHandler->spawnIdMenu->IsOpen()) {
+                        bool clickedInside = (event.button.x >= stateHandler->spawnIdMenu->rect.x &&
+                                            event.button.x <= stateHandler->spawnIdMenu->rect.x + stateHandler->spawnIdMenu->rect.w &&
+                                            event.button.y >= stateHandler->spawnIdMenu->rect.y &&
+                                            event.button.y <= stateHandler->spawnIdMenu->rect.y + stateHandler->spawnIdMenu->rect.h);
+                        if(!clickedInside) {
+                            stateHandler->spawnIdMenu->Close();
+                            delete stateHandler->spawnIdMenu;
+                            stateHandler->spawnIdMenu = nullptr;
+                        } else {
+                            if(stateHandler->spawnIdMenu->TextBoxIsHovered(event.button.x, event.button.y)) {
+                                SDL_StartTextInput();
+                                stateHandler->spawnIdMenu->is_textbox_active = true;
+                            } else {
+                                SDL_StopTextInput();
+                                stateHandler->spawnIdMenu->is_textbox_active = false;
+                            }
+                        }
+                        break;
+                    }
+
                     if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu) {
                         if(stateHandler->createProjMenu->CheckTextBoxIsHovered(event.button.x, event.button.y)) {
                             SDL_StartTextInput();
@@ -128,8 +149,53 @@ int main(){
                         }
                     }
 
-                    if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < img_menu.rect.y )
+                    if(stateHandler && stateHandler->spawnIdMenu && stateHandler->spawnIdMenu->IsOpen()) {
+                        if(stateHandler->spawnIdMenu->TextBoxIsHovered(event.button.x, event.button.y)) {
+                            SDL_StartTextInput();
+                            stateHandler->spawnIdMenu->is_textbox_active = true;
+                        } else {
+                            SDL_StopTextInput();
+                            stateHandler->spawnIdMenu->is_textbox_active = false;
+                        }
+
+                        break;
+                    }
+
+                    if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < img_menu.rect.y ) {
+                        if(event.button.button == SDL_BUTTON_RIGHT) {
+
+                            int32_t grid_x = std::floor(event.motion.x / (float)viewport.tile_size + viewport.offsetX);
+                            int32_t grid_y = std::floor(event.motion.y / (float)viewport.tile_size + viewport.offsetY);
+
+                            auto it = map_rend.grid.find(Map::TileCoord(grid_x, grid_y));
+                            if (it != map_rend.grid.end()) {
+                                int16_t clicked_texture_id = it->second.textureId;
+
+                                if(clicked_texture_id > 0) {
+                                    if(stateHandler && !stateHandler->spawnIdMenu) {
+                                        std::vector<uint16_t> current_ids = map_rend.GetSpawnIdsByTexture(clicked_texture_id);
+                                        std::cout << "DEBUG: Found " << current_ids.size() << " IDs for texture " << clicked_texture_id << std::endl;
+                                        
+                                        std::string prefill_text = "";
+                                        for (size_t i = 0; i < current_ids.size(); i++) {
+                                            prefill_text += std::to_string(current_ids[i]);
+                                            if (i < current_ids.size() - 1) {
+                                                prefill_text += ", ";
+                                            }
+                                        }
+
+                                        stateHandler->spawnIdMenu = new Menu::SpawnIdMenu(event.motion.x, event.motion.y, 20.0f, 15.0f, clicked_texture_id);
+                                        stateHandler->spawnIdMenu->inp_text = prefill_text;
+                                    }
+
+                                    stateHandler->spawnIdMenu->Open();
+                                }
+                            }
+
+                            break;
+                        }
                         viewport.is_mouse_down = true;
+                    }
 
                     last_mpos_x = event.motion.x;
                     last_mpos_y = event.motion.y;
@@ -181,6 +247,14 @@ int main(){
                             }
                         }
 
+                        if(stateHandler && stateHandler->spawnIdMenu && stateHandler->spawnIdMenu->IsOpen()) {
+                            if(stateHandler->spawnIdMenu->appl_btn.isHovered) {
+                                stateHandler->spawnIdMenu->appl_btn.onPress();
+                                break;
+                            }
+                            break;
+                        }
+
                         if(event.motion.y > img_menu.rect.y ){
                             for(auto& img : img_menu.images) {
                                 if(!img.second.isHovered) continue;
@@ -188,6 +262,13 @@ int main(){
                                 img.second.SelectImage(&viewport);
                                 break;
                             }
+                            
+                            /// No image selected assume selection clear
+                            for(auto& tile : viewport.selected_tiles) {
+                                tile.second->DeSelect();
+                            }
+
+                            viewport.selected_tiles.clear();
 
                             break;
                         }
@@ -240,6 +321,15 @@ int main(){
                         }
                     }
                     
+                    if(stateHandler->spawnIdMenu && stateHandler->spawnIdMenu->IsOpen()) {
+                        Menu::MenuBtn* btn = &stateHandler->spawnIdMenu->appl_btn;
+                        stateHandler->spawnIdMenu->appl_btn.isHovered = 
+                                            (event.motion.x > btn->rect.x && 
+                                             event.motion.x < btn->rect.x + btn->rect.w &&
+                                             event.motion.y > btn->rect.y && 
+                                             event.motion.y < btn->rect.y + btn->rect.h);
+                    }
+
                     if(viewport.ctrl_down && viewport.lshift_down && viewport.is_mouse_down) {
                         
                         if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < img_menu.rect.y) {
@@ -271,6 +361,28 @@ int main(){
                     if(viewport.ctrl_down && event.key.keysym.sym == SDLK_q)
                         viewport.ResetZoom(); 
 
+                    if(event.key.keysym.scancode == SDL_SCANCODE_DELETE) {
+
+                        // If no selected tiles assume Absolute Texture Removal
+                        if(viewport.selected_tiles.empty()) {
+                            img_menu.AbsoluteRemoveTexture(&map_rend);
+                            break;
+                        }
+
+                        for(auto& tile : viewport.selected_tiles) {
+                            tile.second->DeleteTexture();
+                        }
+                    }
+
+                    /// Clear all selected tiles on ESCAPE
+                    if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                        for(auto& tile : viewport.selected_tiles) {
+                            tile.second->DeSelect();
+                        }
+
+                        viewport.selected_tiles.clear();
+                    }
+
                     if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {
                         if(event.key.keysym.sym == SDLK_BACKSPACE && stateHandler->createProjMenu->text.length() > 0) {
                             stateHandler->createProjMenu->text.pop_back();
@@ -278,6 +390,16 @@ int main(){
                         else if(event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER) {
                             SDL_StopTextInput();
                             stateHandler->createProjMenu->isTextBoxActive = false;
+                        }
+                    }
+
+                    if(stateHandler && stateHandler->spawnIdMenu && stateHandler->spawnIdMenu->is_textbox_active) {
+                        if(event.key.keysym.sym == SDLK_BACKSPACE && stateHandler->spawnIdMenu->inp_text.length() > 0) {
+                            stateHandler->spawnIdMenu->inp_text.pop_back();
+                        }
+                        else if(event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER) {
+                            SDL_StopTextInput();
+                            stateHandler->spawnIdMenu->is_textbox_active = false;
                         }
                     }
                 break;
@@ -290,6 +412,12 @@ int main(){
                 case SDL_TEXTINPUT:
                     if(stateHandler && stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu && stateHandler->createProjMenu->isTextBoxActive) {
                         stateHandler->createProjMenu->text += event.text.text;
+                    }
+                    else if(stateHandler->spawnIdMenu && stateHandler->spawnIdMenu->IsOpen() && stateHandler->spawnIdMenu->is_textbox_active) {
+                        char c = event.text.text[0];
+                        if ((c >= '0' && c <= '9') || c == ',' || c == ' ') {
+                            stateHandler->spawnIdMenu->inp_text += event.text.text;
+                        }
                     }
                 break;
                 case SDL_DROPFILE: {
@@ -332,10 +460,16 @@ int main(){
             stateHandler->openProjMenu->Render();
         }
 
+        if(stateHandler->spawnIdMenu && stateHandler->spawnIdMenu->IsOpen()) {
+            stateHandler->spawnIdMenu->Render();
+        }
+
         SDL_RenderPresent(rend);
     }
 
     if (stateHandler) {
+        delete stateHandler->openProjMenu;
+        delete stateHandler->spawnIdMenu;
         delete stateHandler->createProjMenu;
         delete stateHandler;
     }

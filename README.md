@@ -21,6 +21,12 @@ Small section explaining controls so I (myself) do not forget them.
 
 **RESET ZOOM** : LCTRL + Q.
 
+**DESELECT ALL TILES** : ESCAPE
+
+**DELETE TEXTURE FROM SELECTED TILES** : DELETE
+
+To remove a texture from the map, deselect all tiles selecte the texture you want to remove from the image menu and press the delete key.
+
 ### NOT DONE
 
 **MOVE TO CENTER OF MAP** : LCTRL + 0.

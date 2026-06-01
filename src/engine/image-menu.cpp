@@ -6,6 +6,8 @@
 #include "../globalStateHandler.hpp"
 
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <SDL2/SDL_ttf.h>
 
 extern Managers::AssetManager glblAssetManager;
@@ -15,6 +17,7 @@ extern SDL_Renderer* rend;
 extern TTF_Font* appFont;
 
 static SDL_Texture* imgMenuText = NULL;
+static SDL_Color white = {255, 255, 255, 255};
 namespace Menu {
 
     int8_t UsableImage::SetImage(SDL_Texture* tex) {
@@ -24,6 +27,20 @@ namespace Menu {
 
     void UsableImage::SelectImage(Map::MapViewport* vp) {
         // Logic for selecting this specific image
+
+        if(stateHandler && stateHandler->imageMenu) {
+            for(auto& img : stateHandler->imageMenu->images) {
+                if(img.second.is_selected) {
+                    img.second.border_color = nullptr;
+                    img.second.is_selected = false;
+                }
+            }
+        }
+
+        this->border_color = &white;
+        this->is_selected = true;
+
+        if(vp->selected_tiles.empty()) return;
 
         SDL_Texture* texture = glblAssetManager.GetAsset(this->fpath);
         if(!texture) return;
@@ -83,6 +100,14 @@ namespace Menu {
 
         for (auto const& pair : this->images) {
             SDL_RenderCopy(rend, pair.second.texture, NULL, &pair.second.rect);
+
+            if(pair.second.border_color) {
+                SDL_Color color = *pair.second.border_color;
+
+                SDL_SetRenderDrawColor(rend, color.r, color.g, color.b, color.a);
+                SDL_RenderDrawRect(rend, &pair.second.rect);
+                SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+            }
         }
     }
 
@@ -115,6 +140,7 @@ namespace Menu {
             std::cerr << "Cannot save tiles.bmp: No project is currently open!" << std::endl;
         }
 
+        SaveManifest();
         SDL_FreeSurface(atlas);
     }
 
@@ -176,7 +202,7 @@ namespace Menu {
         int32_t current_count = this->raw_surfaces.size() - 1;
         newUiImg.rect.w = this->image_size;
         newUiImg.rect.h = this->image_size;
-        newUiImg.rect.x = this->rect.x + (this->rect.w * .005f) + (current_count * this->image_size);
+        newUiImg.rect.x = this->rect.x + (this->rect.w * .005f) + (current_count * (this->image_size + this->menu_padding));
         newUiImg.rect.y = this->rect.y + (this->rect.h * .15f); 
 
         ImageCoord coord = {(int32_t)this->raw_surfaces.size(), 0};
@@ -188,5 +214,91 @@ namespace Menu {
 
         return 0;
     }
+
+    void ImageMenu::AbsoluteRemoveTexture(Map::MapRenderer* mr) {
+
+        uint16_t selected_texture_id = 0;
+        std::string fpath = "";
+        ImageCoord key;
+
+        for(const auto& img : this->images) {
+
+            if(img.second.is_selected) {
+                selected_texture_id = img.second.texture_id;
+                fpath = img.second.fpath;
+                key = img.first;
+            }
+        }
+
+        if(selected_texture_id == 0) return;
+
+        this->images.erase(key);
+        this->importedImages.erase(fpath);
+
+        for(auto& tile : mr->grid) {
+
+            if(tile.second.textureId == selected_texture_id) {
+                tile.second.DeleteTexture();
+            }
+
+            if(tile.second.textureId > selected_texture_id) {
+                tile.second.textureId--;
+            }
+        }
+
+        SDL_FreeSurface(this->raw_surfaces[selected_texture_id - 1]);
+        this->raw_surfaces.erase(this->raw_surfaces.begin() + selected_texture_id - 1);
+
+        //glblAssetManager.RemoveAsset(fpath);
+        std::remove(fpath.c_str());
+        PackAndSaveSpriteSheet();
+    }
+
+    void ImageMenu::SaveManifest() {
+        if (!stateHandler || stateHandler->currentProjectPath.empty()) {
+            std::cerr << "Cannot save manifest: No project is currently open!" << std::endl;
+            return;
+        }
+    
+        std::string manifest_path = stateHandler->currentProjectPath + "/data/manifest.txt";
+        std::ofstream file(manifest_path);
+    
+        if (!file.is_open()) {
+            std::cerr << "Failed to open manifest for writing: " << manifest_path << std::endl;
+            return;
+        }
+    
+        // The images map is sorted by ImageCoord (x = texture_id),
+        // so iterating it gives us entries in correct ID order already.
+        for (const auto& pair : this->images) {
+            file << pair.second.fpath << "\n";
+        }
+    
+        file.close();
+        std::cout << "Manifest saved to: " << manifest_path << std::endl;
+    }
+
+    void ImageMenu::LoadFromManifest(const std::string& projectPath, SDL_Renderer* rend) {
+        std::string manifest_path = projectPath + "/data/manifest.txt";
+        std::ifstream file(manifest_path);
+    
+        if (!file.is_open()) {
+            // No manifest exists yet (old project), gracefully do nothing.
+            std::cerr << "No manifest found at: " << manifest_path << std::endl;
+            return;
+        }
+    
+        std::string line;
+        while (std::getline(file, line)) {
+            if (!line.empty()) {
+                // ImportImage assigns IDs sequentially based on raw_surfaces.size(),
+                // so calling it in manifest order gives the exact same IDs as when saved.
+                this->ImportImage(line, rend);
+            }
+        }
+    
+        file.close();
+    }
+
 
 }
