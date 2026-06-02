@@ -10,6 +10,8 @@
 #include "toolbar/buttons/toolbarBtn.hpp"
 
 #include "engine/assetManager/assetManager.hpp"
+#include "misc-menus/quit-menu.hpp"
+
 #include "font_data.h"
 
 #define FONT_DIRECTORY "fonts/arial.ttf"
@@ -18,10 +20,6 @@ SDL_Renderer* rend = NULL;
 TTF_Font* appFont = NULL;
 bool is_running = true;
 globalStateHandler* stateHandler = NULL;
-
-extern char *composition;
-extern Sint32 cursor;
-extern Sint32 selection_len;
 
 Managers::AssetManager glblAssetManager;
 
@@ -94,6 +92,8 @@ int main(){
     stateHandler = new globalStateHandler();
     stateHandler->createProjMenu = nullptr;
     stateHandler->isCreateProjMenuOpen = false;
+    
+    Menu::QuitMenu quit_menu(&is_running);
 
     Map::MapRenderer map_rend;
     Map::MapViewport viewport;
@@ -117,10 +117,18 @@ int main(){
 
         SDL_Event event;
         while(SDL_PollEvent(&event)){
-            if(event.type == SDL_QUIT) is_running = false;
+            if(event.type == SDL_QUIT) {
+                /// Here means user wants to quit so display the Quit and save
+                /// and the quit without saving btns
+                /// don't do is_running = false to be able to recover the app loop if user exits
+                if(!quit_menu.IsOpen()) quit_menu.Open();
+            }
 
             switch(event.type){
                 case SDL_MOUSEBUTTONDOWN:
+                    /// no other actions permited when the quit menu is open
+                    if(quit_menu.IsOpen()) break;
+
                     if(stateHandler && stateHandler->spawnIdMenu && stateHandler->spawnIdMenu->IsOpen()) {
                         bool clickedInside = (event.button.x >= stateHandler->spawnIdMenu->rect.x &&
                                             event.button.x <= stateHandler->spawnIdMenu->rect.x + stateHandler->spawnIdMenu->rect.w &&
@@ -278,9 +286,12 @@ int main(){
                             /// Break out of switch statement
                             break;
                         }
-                        else {
-                            if(stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {
-                                stateHandler->openProjMenu->CloseMenu();
+
+                        if(quit_menu.IsOpen()) {
+                            for(auto& btn : quit_menu.btns) {
+                                if(!btn.isHovered) continue;
+                                btn.onPress();
+                                break;
                             }
                         }
 
@@ -365,6 +376,15 @@ int main(){
                                              event.motion.x < btn->rect.x + btn->rect.w &&
                                              event.motion.y > btn->rect.y && 
                                              event.motion.y < btn->rect.y + btn->rect.h);
+                    }
+
+                    if(quit_menu.IsOpen()) {
+                        for(auto& btn : quit_menu.btns) {
+                            btn.isHovered = (event.motion.x > btn.rect.x && 
+                                             event.motion.x < btn.rect.x + btn.rect.w &&
+                                             event.motion.y > btn.rect.y && 
+                                             event.motion.y < btn.rect.y + btn.rect.h);
+                        }
                     }
 
                     if(viewport.ctrl_down && viewport.lshift_down && viewport.is_mouse_down) {
@@ -501,6 +521,8 @@ int main(){
             stateHandler->spawnIdMenu->Render();
         }
 
+        if(quit_menu.IsOpen()) quit_menu.Render();
+
         SDL_RenderPresent(rend);
     }
 
@@ -510,6 +532,10 @@ int main(){
         delete stateHandler->createProjMenu;
         delete stateHandler;
     }
+
+    quit_menu.btns.clear();
+    toolbar.btns.clear();
+    glblAssetManager.Clear();
 
     TTF_CloseFont(appFont);
     TTF_Quit();
