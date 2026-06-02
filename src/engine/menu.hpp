@@ -65,6 +65,7 @@ namespace Menu {
             uint16_t image_size;
             SDL_Rect rect;
         ImageMenu(uint16_t img_size = BASE_IMAGE_SIZE);
+        ~ImageMenu();
         void Render();
         int8_t ImportImage(const std::string& filepath, SDL_Renderer* rend);
         void PackAndSaveSpriteSheet();

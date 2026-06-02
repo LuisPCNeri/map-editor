@@ -44,4 +44,13 @@ namespace Managers {
         return -1;
     }
 
+    void AssetManager::Clear() {
+
+        for(auto& pair : this->gbl_assets) {
+            SDL_DestroyTexture(pair.second);
+        }
+
+        this->gbl_assets.clear();
+    }
+
 }

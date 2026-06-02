@@ -69,9 +69,20 @@ namespace Menu {
         this->rect.h = (int32_t) this->height;
     }
 
-    /*ImageMenu::~ImageMenu() {
-        SDL_DestroyTexture(imgMenuText);
-    }*/
+    ImageMenu::~ImageMenu() {
+        if (imgMenuText) {
+            SDL_DestroyTexture(imgMenuText);
+            imgMenuText = NULL;
+        }
+
+        for (SDL_Surface* surface : this->raw_surfaces) {
+            if (surface != nullptr) {
+                SDL_FreeSurface(surface);
+            }
+        }
+        
+        this->raw_surfaces.clear();
+    }
 
     void ImageMenu::Render() {
         SDL_RenderFillRect(rend, &this->rect);

@@ -18,6 +18,7 @@ namespace Managers
             SDL_Texture* GetAsset(std::string filepath);
             int8_t RemoveAsset(std::string filepath);
             ~AssetManager();
+            void Clear();
     };
 }
 
