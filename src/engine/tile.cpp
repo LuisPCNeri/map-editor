@@ -36,10 +36,24 @@ namespace Map {
         
     }
 
+    inline bool operator==(const SDL_Color& a, const SDL_Color& b) {
+        return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+    }
+
     void Tile::TileDraw(SDL_Rect dest){
 
         if(this->texture) {
+            /// Drawing the tile rect when the tile already has a texture looks ugly
             SDL_RenderCopy(rend, this->texture, NULL, &dest);
+            SDL_Color selected_border_color = SELECTED_BORDER_COLOR;
+            
+            if(this->border_color == selected_border_color) {
+                SDL_SetRenderDrawColor(rend, this->border_color.r, this->border_color.g, this->border_color.b, this->border_color.a);
+                SDL_RenderDrawRect(rend, &dest);
+                SDL_SetRenderDrawColor(rend, 0, 0, 0, 0);
+            }
+
+            return;
         }
 
         SDL_SetRenderDrawColor(rend, this->border_color.r, this->border_color.g, this->border_color.b, this->border_color.a);
