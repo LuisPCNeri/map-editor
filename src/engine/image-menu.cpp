@@ -8,7 +8,9 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 
 extern Managers::AssetManager glblAssetManager;
 extern globalStateHandler* stateHandler;
@@ -181,7 +183,10 @@ namespace Menu {
             return 1;
         };
 
-        SDL_Surface* newSurface = SDL_LoadBMP(new_destination.c_str());
+        SDL_Surface* newSurface = NULL;
+
+        if(original_file.extension() == ".bmp") newSurface = SDL_LoadBMP(new_destination.c_str());
+        else newSurface = IMG_Load(new_destination.c_str());
 
         if(!newSurface) {
             std::cerr << "Failed to load image: " << SDL_GetError() << std::endl;
