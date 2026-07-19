@@ -202,6 +202,8 @@ namespace Map {
         int32_t max_y = std::numeric_limits<int32_t>::min();
 
         for (const auto& pair : this->grid) {
+            if(pair.second.textureId == 0 && pair.second.spawnable_ids.empty()) continue;
+
             if (pair.first.x < min_x) min_x = pair.first.x;
             if (pair.first.x > max_x) max_x = pair.first.x;
             if (pair.first.y < min_y) min_y = pair.first.y;
