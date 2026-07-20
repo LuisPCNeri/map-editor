@@ -10,7 +10,7 @@ extern SDL_Renderer* rend;
 #include "../globalStateHandler.hpp"
 #include "menu.hpp"
 
-#define MAX_SPAWN_IDS 32
+#define MAX_SPAWN_IDS 16
 
 #pragma pack(push, 1)
 
