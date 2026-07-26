@@ -8,6 +8,7 @@
 #include <map>
 #include <functional>
 #include <set>
+#include <vector>
 
 #include "../utils/vp_size_t.hpp"
 #include "map.hpp"
@@ -57,6 +58,7 @@ namespace Menu {
             std::map<ImageCoord, UsableImage> images;
             std::vector<SDL_Surface*> raw_surfaces;
             std::set<std::string> importedImages;
+            std::vector<SDL_Rect> tabs; 
 
             uint32_t menu_padding = 8; // px
 
@@ -67,6 +69,7 @@ namespace Menu {
         ImageMenu(uint16_t img_size = BASE_IMAGE_SIZE);
         ~ImageMenu();
         void Render();
+        void LoadTabs();
         int8_t ImportImage(const std::string& filepath, SDL_Renderer* rend);
         void PackAndSaveSpriteSheet();
         void AbsoluteRemoveTexture(Map::MapRenderer* mr);
@@ -75,8 +78,57 @@ namespace Menu {
 
     };
 
+    class TrainerSprite {
+
+        public:
+            ImageCoord coord;
+            std::string fpath = "";
+
+            uint16_t texture_id;
+
+            SDL_Color* border_color = nullptr;
+
+            SDL_Texture* texture;
+            SDL_Rect rect;
+            bool isHovered = 0;
+            bool is_selected = false;
+        int8_t SetSprite(SDL_Texture* texture);
+        void SelectSprite(Map::MapViewport* viewport);
+    };
+
+    #define BASE_TRAINER_SPRITE_SIZE 64
+
+    class TrainerSpriteMenu {
+
+        public:
+            std::map<ImageCoord, TrainerSprite> sprites;
+            std::set<std::string> imported_sprites;
+            std::vector<SDL_Rect> tabs;
+            std::vector<SDL_Surface*> raw_surfaces;
+
+            uint32_t menu_padding = 8; // px
+
+            vh_size_t height;
+            vw_size_t width;
+            uint16_t sprite_size = BASE_TRAINER_SPRITE_SIZE;
+            SDL_Rect rect;
+
+        TrainerSpriteMenu();
+        ~TrainerSpriteMenu();
+        void Render();
+
+        void LoadTabs();
+
+        int8_t ImportSprite(const std::string& filepath, SDL_Renderer* rend);
+        void AbsoluteRemoveSprite(Map::MapRenderer* mr);
+
+        void SaveManifest();
+        void PackAndSaveAtlas();
+        void LoadFromManifest(const std::string& projectPath, SDL_Renderer* rend);
+    };
+
     class MenuBtn {
-            
+
         private:
             int32_t x;
             int32_t y;

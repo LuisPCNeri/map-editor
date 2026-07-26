@@ -1,3 +1,5 @@
 *.o
 map-editor
 font_data.h
+compile_commands.json
+.cache

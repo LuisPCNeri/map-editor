@@ -4,6 +4,10 @@
 namespace Menu { class CreateProjMenu; class OpenProjMenu; class ImageMenu; class SpawnIdMenu;}
 namespace Map  { class MapRenderer; class MapViewport;}
 
+#include <string>
+
+enum class EditorMode {TILE_PAINT = 0, TRAINER_PLACE = 1};
+
 typedef struct globalStateHandler
 {
     
@@ -19,6 +23,7 @@ typedef struct globalStateHandler
     Map::MapViewport* mapViewport;
 
     std::string currentProjectPath;
+    EditorMode active_mode = EditorMode::TILE_PAINT;
 
 } globalStateHandler;
 

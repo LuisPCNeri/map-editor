@@ -2,9 +2,13 @@
 #define __MAP_H__
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_render.h>
+#include <cstdint>
 #include <map>
 #include <vector>
 #include <tuple>
+
+#include <string>
 
 #define BASE_TILE_SIZE 32
 #define BASE_RENDER_PADDING 5
@@ -20,6 +24,16 @@ namespace Map {
 
         bool operator<(const TileCoord& other) const{
             return std::tie(x,y) < std::tie(other.x, other.y);
+        }
+    };
+
+    class WorldCoord {
+        public:
+            int32_t x;
+            int32_t y;
+        WorldCoord(int32_t x, int32_t y);
+        bool operator <(const WorldCoord& other) const {
+            return std::tie(x, y) < std::tie(other.x, other.y);
         }
     };
 

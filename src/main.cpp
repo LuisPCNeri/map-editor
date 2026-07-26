@@ -1,7 +1,10 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <string>
+#include <sys/types.h>
 
 #include "engine/map.hpp"
 #include "engine/menu.hpp"
@@ -100,6 +103,8 @@ int main(){
 
     Menu::ImageMenu img_menu;
     Toolbar::Toolbar toolbar;
+
+    Menu::TrainerSpriteMenu trainer_menu;
 
     stateHandler->imageMenu = &img_menu;
     stateHandler->mapRenderer = &map_rend;
@@ -206,7 +211,7 @@ int main(){
                         break;
                     }
 
-                    if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < img_menu.rect.y ) {
+                    if(event.motion.y > toolbar.y + toolbar.height && event.motion.y < img_menu.rect.y - img_menu.tabs[0].h ) {
                         if(event.button.button == SDL_BUTTON_RIGHT) {
 
                             int32_t grid_x = std::floor(event.motion.x / (float)viewport.tile_size + viewport.offsetX);
@@ -303,7 +308,7 @@ int main(){
                             break;
                         }
 
-                        if(event.motion.y > img_menu.rect.y ){
+                        if(event.motion.y > img_menu.rect.y - img_menu.tabs[0].h ){
                             for(auto& img : img_menu.images) {
                                 if(!img.second.isHovered) continue;
 
@@ -311,12 +316,26 @@ int main(){
                                 break;
                             }
                             
+
+                            /// This handles Tab switching for ALL iamge menus, tile, sprites and in the furture buildings n shit
+                            for(size_t i = 0; i < img_menu.tabs.size(); i++) {
+                                SDL_Rect* tab = &img_menu.tabs[i];
+
+                                int32_t x = event.motion.x;
+                                int32_t y = event.motion.y;
+                                if( x > tab->x && x < (tab->x + tab->w) && y > tab->y && y < (tab->y + tab->h) ) {
+                                    
+                                    if(i == 0) stateHandler->active_mode = EditorMode::TILE_PAINT;
+                                    if(i == 1) stateHandler->active_mode = EditorMode::TRAINER_PLACE;
+                                }
+                            }
                             /// No image selected assume selection clear
                             for(auto& tile : viewport.selected_tiles) {
                                 tile.second->DeSelect();
                             }
 
                             viewport.selected_tiles.clear();
+
 
                             break;
                         }
@@ -506,7 +525,8 @@ int main(){
         SDL_RenderClear(rend);
 
         map_rend.RenderVisible(&viewport);
-        img_menu.Render();
+        if(stateHandler->active_mode == EditorMode::TILE_PAINT) img_menu.Render();
+        if(stateHandler->active_mode == EditorMode::TRAINER_PLACE) trainer_menu.Render(); 
         toolbar.Render();
 
         if(stateHandler->isCreateProjMenuOpen && stateHandler->createProjMenu) {

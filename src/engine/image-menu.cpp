@@ -1,5 +1,9 @@
 #include "menu.hpp"
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_image.h>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 
 #include "engine/assetManager/assetManager.hpp"
@@ -12,11 +16,21 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 
+#define IMG_MENU_TAB_TEXTURE_PATH "../assets/image-menu-tab.png"
+#define IMG_MENU_TAB_SELECTED_TEXTURE_PATH "../assets/image-menu-tab-selected.png"
+#define TRAINER_MENU_TAB_TEXTURE_PATH "../assets/trainer-menu-tab.png"
+#define TRAINER_MENU_TAB_SELECTED_TEXTURE_PATH "../assets/trainer-menu-tab-selected.png"
+
 extern Managers::AssetManager glblAssetManager;
 extern globalStateHandler* stateHandler;
 
 extern SDL_Renderer* rend;
 extern TTF_Font* appFont;
+
+static SDL_Texture* image_menu_tab_texture = nullptr;
+static SDL_Texture* image_menu_tab_selected_texture = nullptr;
+static SDL_Texture* trainer_sprite_menu_tab_texture = nullptr;
+static SDL_Texture* trainer_sprite_menu_tab_selected_texture = nullptr;
 
 static SDL_Texture* imgMenuText = NULL;
 static SDL_Color white = {255, 255, 255, 255};
@@ -69,6 +83,39 @@ namespace Menu {
         this->rect.y = h - vh_size_t(20.0f) - 75;
         this->rect.w = (int32_t) this->width;
         this->rect.h = (int32_t) this->height;
+
+        if(!image_menu_tab_texture) {
+            SDL_Surface* surf = IMG_Load(IMG_MENU_TAB_TEXTURE_PATH);
+
+            w = surf->w;
+            h = surf->h;
+
+            image_menu_tab_texture = SDL_CreateTextureFromSurface(rend, surf);
+            SDL_FreeSurface(surf);
+        }
+
+        if(!image_menu_tab_selected_texture) {
+            SDL_Surface* surf = IMG_Load(IMG_MENU_TAB_SELECTED_TEXTURE_PATH);
+            image_menu_tab_selected_texture = SDL_CreateTextureFromSurface(rend, surf);
+            SDL_FreeSurface(surf);
+        }
+
+        if(!trainer_sprite_menu_tab_texture) {
+            SDL_Surface* surf = IMG_Load(TRAINER_MENU_TAB_TEXTURE_PATH);
+            trainer_sprite_menu_tab_texture = SDL_CreateTextureFromSurface(rend, surf);
+            SDL_FreeSurface(surf);
+        }
+
+        if(!trainer_sprite_menu_tab_selected_texture) {
+            SDL_Surface* surf = IMG_Load(TRAINER_MENU_TAB_SELECTED_TEXTURE_PATH);
+            trainer_sprite_menu_tab_selected_texture = SDL_CreateTextureFromSurface(rend, surf);
+            SDL_FreeSurface(surf);
+        }
+
+        SDL_Rect img_menu_tab = { .x = this->rect.x, .y = this->rect.y - h, .w = w, .h = h};
+        this->tabs.push_back(img_menu_tab);
+        img_menu_tab.x += w;
+        this->tabs.push_back(img_menu_tab);
     }
 
     ImageMenu::~ImageMenu() {
@@ -82,8 +129,54 @@ namespace Menu {
                 SDL_FreeSurface(surface);
             }
         }
-        
+
+        if(image_menu_tab_texture) {
+            SDL_DestroyTexture(image_menu_tab_texture);
+        }
+        if(image_menu_tab_selected_texture) {
+            SDL_DestroyTexture(image_menu_tab_selected_texture);
+        }
+        if(trainer_sprite_menu_tab_texture) {
+            SDL_DestroyTexture(trainer_sprite_menu_tab_texture);
+        }
+        if(trainer_sprite_menu_tab_selected_texture) {
+            SDL_DestroyTexture(trainer_sprite_menu_tab_selected_texture);
+        }
+
         this->raw_surfaces.clear();
+    }
+
+    void ImageMenu::LoadTabs() {
+        switch (stateHandler->active_mode) {
+            case EditorMode::TILE_PAINT: 
+            {
+                int32_t w,h;
+                SDL_QueryTexture(image_menu_tab_selected_texture, NULL, NULL, &w, &h);
+
+                SDL_Rect dst = { .x = this->rect.x, .y = this->rect.y - h, .w = w, .h = h };
+                SDL_RenderCopy(rend, image_menu_tab_selected_texture, NULL, &dst);
+ 
+                /// Images are the same size, no alterations to w,h or any other field of dst necessaty
+                dst.x += w;
+                SDL_RenderCopy(rend, trainer_sprite_menu_tab_texture, NULL, &dst);
+
+                break;
+            }
+            case EditorMode::TRAINER_PLACE:
+            {
+                int32_t w,h;
+                SDL_QueryTexture(image_menu_tab_texture, NULL, NULL, &w, &h);
+
+                SDL_Rect dst = { .x = this->rect.x, .y = this->rect.y - h, .w = w, .h = h };
+                SDL_RenderCopy(rend, image_menu_tab_texture, NULL, &dst);
+ 
+                /// Images are the same size, no alterations to w,h or any other field of dst necessaty
+                dst.x += w;
+                SDL_RenderCopy(rend, trainer_sprite_menu_tab_selected_texture, NULL, &dst);
+            }
+            default:
+                break;
+        }
     }
 
     void ImageMenu::Render() {
@@ -98,6 +191,8 @@ namespace Menu {
             imgMenuText = SDL_CreateTextureFromSurface(rend, surf);
             SDL_FreeSurface(surf);
         }
+
+       this->LoadTabs();
 
         int32_t w,h;
         SDL_QueryTexture(imgMenuText, NULL, NULL, &w, &h);
