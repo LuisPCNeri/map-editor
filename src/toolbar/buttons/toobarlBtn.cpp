@@ -2,6 +2,7 @@
 #include "toolbarBtn.hpp"
 #include "../../globalStateHandler.hpp"
 
+#include <SDL2/SDL_surface.h>
 #include <iostream>
 #include <sys/stat.h>
 #include <iostream>
@@ -25,21 +26,37 @@ void SaveBtnHandleClick() {
 }
 
 void HandleChooseProjectToOpen(std::string path) {
+    
+    /// To prevent serious problems here
+    stateHandler->active_mode = EditorMode::TILE_PAINT;
 
     /// Previous project cleanup
     stateHandler->imageMenu->images.clear();
     stateHandler->imageMenu->importedImages.clear();
+
+    stateHandler->trainer_menu->images.clear();
+    stateHandler->trainer_menu->importedImages.clear();
 
     for (auto* surf : stateHandler->imageMenu->raw_surfaces) {
         if (surf) SDL_FreeSurface(surf);
     }
     stateHandler->imageMenu->raw_surfaces.clear();
     
+    for(auto& surf : stateHandler->trainer_menu->raw_surfaces) {
+        if(surf) SDL_FreeSurface(surf);
+    }
+    stateHandler->trainer_menu->raw_surfaces.clear();
+
     stateHandler->mapRenderer->grid.clear();
 
     stateHandler->currentProjectPath = path;
-
+    
+    /// Switching the active_mode ensures both manifests are loaded
     stateHandler->imageMenu->LoadFromManifest(path, rend);
+    stateHandler->active_mode = EditorMode::TRAINER_PLACE;
+    stateHandler->trainer_menu->LoadFromManifest(path, rend);
+    stateHandler->active_mode = EditorMode::TILE_PAINT;
+
     stateHandler->mapRenderer->ImportMapFromBinary(path + "/data/map.bin");
 
     if(stateHandler->openProjMenu && stateHandler->openProjMenu->isMenuOpen) {

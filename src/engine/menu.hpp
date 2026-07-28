@@ -2,6 +2,8 @@
 #define __IMG_MENU_H__
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_render.h>
+#include <cstdint>
 #include <stdint.h>
 
 #include <string>
@@ -68,63 +70,32 @@ namespace Menu {
             SDL_Rect rect;
         ImageMenu(uint16_t img_size = BASE_IMAGE_SIZE);
         ~ImageMenu();
-        void Render();
+        virtual void Render();
         void LoadTabs();
-        int8_t ImportImage(const std::string& filepath, SDL_Renderer* rend);
-        void PackAndSaveSpriteSheet();
+        virtual int8_t ImportImage(const std::string& filepath, SDL_Renderer* rend);
+        virtual void PackAndSaveSpriteSheet();
         void AbsoluteRemoveTexture(Map::MapRenderer* mr);
-        void SaveManifest();
+        virtual void SaveManifest();
         void LoadFromManifest(const std::string& projectPath, SDL_Renderer* rend);
 
     };
 
-    class TrainerSprite {
-
+    class TrainerSprite : public UsableImage{
         public:
-            ImageCoord coord;
-            std::string fpath = "";
-
-            uint16_t texture_id;
-
-            SDL_Color* border_color = nullptr;
-
-            SDL_Texture* texture;
-            SDL_Rect rect;
-            bool isHovered = 0;
-            bool is_selected = false;
-        int8_t SetSprite(SDL_Texture* texture);
         void SelectSprite(Map::MapViewport* viewport);
     };
 
     #define BASE_TRAINER_SPRITE_SIZE 64
 
-    class TrainerSpriteMenu {
-
+    class TrainerSpriteMenu : public ImageMenu {
         public:
-            std::map<ImageCoord, TrainerSprite> sprites;
-            std::set<std::string> imported_sprites;
-            std::vector<SDL_Rect> tabs;
-            std::vector<SDL_Surface*> raw_surfaces;
-
-            uint32_t menu_padding = 8; // px
-
-            vh_size_t height;
-            vw_size_t width;
-            uint16_t sprite_size = BASE_TRAINER_SPRITE_SIZE;
-            SDL_Rect rect;
-
+            std::map<ImageCoord, TrainerSprite> images;
         TrainerSpriteMenu();
         ~TrainerSpriteMenu();
-        void Render();
-
-        void LoadTabs();
-
-        int8_t ImportSprite(const std::string& filepath, SDL_Renderer* rend);
-        void AbsoluteRemoveSprite(Map::MapRenderer* mr);
-
-        void SaveManifest();
-        void PackAndSaveAtlas();
-        void LoadFromManifest(const std::string& projectPath, SDL_Renderer* rend);
+        void Render() override;
+        int8_t ImportImage(const std::string& filepath, SDL_Renderer* rend) override;
+        void PackAndSaveSpriteSheet() override;
+        void SaveManifest() override;
     };
 
     class MenuBtn {

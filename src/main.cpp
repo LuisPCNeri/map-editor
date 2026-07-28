@@ -109,6 +109,7 @@ int main(){
     stateHandler->imageMenu = &img_menu;
     stateHandler->mapRenderer = &map_rend;
     stateHandler->mapViewport = &viewport;
+    stateHandler->trainer_menu = &trainer_menu;
 
     SetUpToolbar(&toolbar);
     
@@ -500,7 +501,8 @@ int main(){
                     char* droppedFileDir = event.drop.file;
                     std::string filepath(droppedFileDir);
 
-                    img_menu.ImportImage(filepath, rend);
+                    if(stateHandler->active_mode == EditorMode::TILE_PAINT) img_menu.ImportImage(filepath, rend);
+                    if(stateHandler->active_mode == EditorMode::TRAINER_PLACE) trainer_menu.ImportImage(filepath, rend);
                     SDL_free(droppedFileDir);
                     break;
                 }

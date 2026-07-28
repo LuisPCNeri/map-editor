@@ -8,6 +8,7 @@
 
 #include "engine/assetManager/assetManager.hpp"
 #include "../globalStateHandler.hpp"
+#include "utils/utils.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -85,7 +86,7 @@ namespace Menu {
         this->rect.h = (int32_t) this->height;
 
         if(!image_menu_tab_texture) {
-            SDL_Surface* surf = IMG_Load(IMG_MENU_TAB_TEXTURE_PATH);
+            SDL_Surface* surf = IMG_Load(Utils::getAssetPath(IMG_MENU_TAB_TEXTURE_PATH).c_str());
 
             w = surf->w;
             h = surf->h;
@@ -95,19 +96,19 @@ namespace Menu {
         }
 
         if(!image_menu_tab_selected_texture) {
-            SDL_Surface* surf = IMG_Load(IMG_MENU_TAB_SELECTED_TEXTURE_PATH);
+            SDL_Surface* surf = IMG_Load(Utils::getAssetPath(IMG_MENU_TAB_SELECTED_TEXTURE_PATH).c_str());
             image_menu_tab_selected_texture = SDL_CreateTextureFromSurface(rend, surf);
             SDL_FreeSurface(surf);
         }
 
         if(!trainer_sprite_menu_tab_texture) {
-            SDL_Surface* surf = IMG_Load(TRAINER_MENU_TAB_TEXTURE_PATH);
+            SDL_Surface* surf = IMG_Load(Utils::getAssetPath(TRAINER_MENU_TAB_TEXTURE_PATH).c_str());
             trainer_sprite_menu_tab_texture = SDL_CreateTextureFromSurface(rend, surf);
             SDL_FreeSurface(surf);
         }
 
         if(!trainer_sprite_menu_tab_selected_texture) {
-            SDL_Surface* surf = IMG_Load(TRAINER_MENU_TAB_SELECTED_TEXTURE_PATH);
+            SDL_Surface* surf = IMG_Load(Utils::getAssetPath(TRAINER_MENU_TAB_SELECTED_TEXTURE_PATH).c_str());
             trainer_sprite_menu_tab_selected_texture = SDL_CreateTextureFromSurface(rend, surf);
             SDL_FreeSurface(surf);
         }
@@ -132,15 +133,19 @@ namespace Menu {
 
         if(image_menu_tab_texture) {
             SDL_DestroyTexture(image_menu_tab_texture);
+            image_menu_tab_texture = NULL;
         }
         if(image_menu_tab_selected_texture) {
             SDL_DestroyTexture(image_menu_tab_selected_texture);
+            image_menu_tab_selected_texture = NULL;
         }
         if(trainer_sprite_menu_tab_texture) {
             SDL_DestroyTexture(trainer_sprite_menu_tab_texture);
+            trainer_sprite_menu_tab_texture = NULL;
         }
         if(trainer_sprite_menu_tab_selected_texture) {
             SDL_DestroyTexture(trainer_sprite_menu_tab_selected_texture);
+            trainer_sprite_menu_tab_selected_texture = NULL;
         }
 
         this->raw_surfaces.clear();
@@ -237,7 +242,11 @@ namespace Menu {
         }
 
         if (stateHandler && !stateHandler->currentProjectPath.empty()) {
-            std::string save_path = stateHandler->currentProjectPath + "/tiles.bmp";
+            std::string save_path = "";
+
+            /// Handle different Atlas
+            if(stateHandler->active_mode == EditorMode::TILE_PAINT) save_path = stateHandler->currentProjectPath + "/tiles.bmp";
+            if(stateHandler->active_mode == EditorMode::TRAINER_PLACE) save_path = stateHandler->currentProjectPath + "/trainers.bmp";
             
             if (SDL_SaveBMP(atlas, save_path.c_str()) != 0) {
                 std::cerr << "Failed to save sprite sheet: " << SDL_GetError() << std::endl;
@@ -371,7 +380,9 @@ namespace Menu {
             return;
         }
     
-        std::string manifest_path = stateHandler->currentProjectPath + "/data/manifest.txt";
+        std::string manifest_path = "";
+        if(stateHandler->active_mode == EditorMode::TILE_PAINT) manifest_path = stateHandler->currentProjectPath + "/data/manifest.txt";
+        if(stateHandler->active_mode == EditorMode::TRAINER_PLACE) manifest_path = stateHandler->currentProjectPath + "/data/trainer_manifest.txt";
         std::ofstream file(manifest_path);
     
         if (!file.is_open()) {
@@ -390,7 +401,10 @@ namespace Menu {
     }
 
     void ImageMenu::LoadFromManifest(const std::string& projectPath, SDL_Renderer* rend) {
-        std::string manifest_path = projectPath + "/data/manifest.txt";
+        std::string manifest_path = "";
+        if(stateHandler->active_mode == EditorMode::TILE_PAINT) manifest_path = projectPath + "/data/manifest.txt";
+        if(stateHandler->active_mode == EditorMode::TRAINER_PLACE) manifest_path = projectPath + "/data/trainer_manifest.txt";
+
         std::ifstream file(manifest_path);
     
         if (!file.is_open()) {

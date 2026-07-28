@@ -20,7 +20,8 @@ SRC = main.cpp \
       engine/assetManager/assetManager.cpp \
       engine/SpawnIdMenu.cpp \
       misc-menus/quit-menu.cpp \
-	  engine/trainer-sprite-menu.cpp
+	  engine/trainer-sprite-menu.cpp \
+	  utils/utils.cpp
 
 OBJ = $(SRC:%.cpp=build/%.o)
 TARGET = map-editor
